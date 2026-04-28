@@ -14,10 +14,4 @@ public class GameView : ViewBase
 
         await base.onInitView();
     }
-
-    void Update()
-    {
-        map.Update();
-    }
-
 }
