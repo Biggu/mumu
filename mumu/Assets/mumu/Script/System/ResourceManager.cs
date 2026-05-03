@@ -9,7 +9,7 @@ public class ResourceManager : MonoSingleton<ResourceManager>
 
     public static string GetViewPath(ViewType _viewType)=> $"View/{_viewType}";
     public static string GetInGamePrefabPath(string _prefabName)=> $"Prefabs/InGame/{_prefabName}";
-    public static string MapDataPath = $"MapData/Mapdata";
+    public static string MapDataPath = $"MapData/mapdata";
 
     /// <summary>
     /// Loads a resource of the specified type from the Resources folder.

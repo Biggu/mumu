@@ -14,14 +14,14 @@ public class InGameMap
         mapRoot = _mapRoot;
         block = await ResourceManager.Instance.LoadAsync<Block>(ResourceManager.GetInGamePrefabPath("block"));
         block.gameObject.SetActive(false); // Deactivate original block
-         generateMap(13, 6, eGameMode.Extreme);
+         //generateMap(6, 4, eGameMode.Extreme);
 
         mapData = loadMap();
         GenerateBlock(mapData);
         ApplyMap(mapData);
     }
-    private const int blockSize = 50;
-    private const int blockSpacing = 2;
+    private const int blockSize = 60;
+    private const int blockSpacing = 0;
 
     private Block[,] blockArray;
     private MapData mapData;
