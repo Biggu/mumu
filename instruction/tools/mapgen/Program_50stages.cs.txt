@@ -1,0 +1,89 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using mumu;
+
+public static class Program
+{
+    const int MapCount = 50;
+    const int ThemeCount = 14;
+    const int MapsPerTheme = 3;
+    const int EasyMaps = 3;
+    const int LastDifficulty = 20;
+    /// 手で作ったので作り直さないマップ（1 = 一本道のチュートリアル）
+    static readonly int[] KeepMaps = { 1 };
+    const double MinFillRate = 0.3;
+    static readonly string[] ThemeNames = { "meadow", "summer", "winter", "autumn", "spring", "sakura", "desert", "cake", "pudding", "city", "village", "sea", "ice", "office" };
+    static readonly HashSet<int> WaterThemes = new HashSet<int> { 2, 11, 12, 13 };
+    static readonly eMapPattern[] EasyPatterns = { eMapPattern.WideRect, eMapPattern.Square, eMapPattern.Oval };
+    static readonly eMapPattern[] LandPatterns = { eMapPattern.Square, eMapPattern.WideRect, eMapPattern.TallRect, eMapPattern.Circle, eMapPattern.Oval, eMapPattern.Hexagon, eMapPattern.Diamond, eMapPattern.Cross, eMapPattern.Donut, eMapPattern.LShape, eMapPattern.UShape, eMapPattern.SShape, eMapPattern.River, eMapPattern.Lake };
+    static readonly eMapPattern[] WaterPatterns = { eMapPattern.River, eMapPattern.Lake, eMapPattern.Coast, eMapPattern.Islands, eMapPattern.Ponds, eMapPattern.TwoRivers, eMapPattern.Circle, eMapPattern.Donut };
+
+    public static void Main(string[] args)
+    {
+        string folder = args[0];
+        Directory.CreateDirectory(Path.Combine(folder, "maps"));
+        var list = new List<MapInfo>();
+        var picker = new Random(20261119);
+        eMapPattern previous = (eMapPattern)(-1);
+
+        // 手で作ったマップ（KeepMaps）は作り直さず、一覧の行もそのまま使う
+        string listPath = Path.Combine(folder, "map_list.csv");
+        var existing = File.Exists(listPath) ? MapCsv.ParseList(File.ReadAllText(listPath)) : new List<MapInfo>();
+
+        for (int n = 1; n <= MapCount; n++)
+        {
+            MapInfo kept = Array.IndexOf(KeepMaps, n) >= 0 ? existing.Find(_i => _i.Id == n) : null;
+            if (kept != null && File.Exists(Path.Combine(folder, "maps", $"map_{n:000000}.csv")))
+            {
+                list.Add(kept);
+                previous = (eMapPattern)(-1);
+                Console.WriteLine($"{n,2} kept (hand-made)");
+                continue;
+            }
+            int themeId = (n - 1) / MapsPerTheme % ThemeCount + 1;
+            int difficulty = n <= EasyMaps ? 1 : (int)Math.Round(2 + (n - EasyMaps - 1) * (LastDifficulty - 2) / (double)(MapCount - EasyMaps - 1));
+
+            eMapPattern pattern = default;
+            float target = MapGenerator.GetWaypointRate(difficulty);
+            MapData best = null; MapGenerator.Result bestResult = default; double bestRate = -1; int bestSeed = 0;
+            // 盤面に対して経路が少なすぎる形は選び直す
+            while (best == null || (n > EasyMaps && bestResult.Waypoints < MinFillRate * bestResult.Width * bestResult.Height))
+            {
+            if (n <= EasyMaps) pattern = EasyPatterns[n - 1];
+            else
+            {
+                eMapPattern[] pool = WaterThemes.Contains(themeId) ? WaterPatterns : LandPatterns;
+                eMapPattern last = best == null ? previous : pattern;
+                do { pattern = pool[picker.Next(pool.Length)]; } while (pattern == previous || pattern == last);
+            }
+            best = null; bestRate = -1;
+            for (int attempt = 0; attempt < 40; attempt++)
+            {
+                int seed = n * 1000 + attempt;
+                var map = new MapData();
+                var r = MapGenerator.Generate(map, difficulty, pattern, seed, false);
+                if (!r.IsSuccess || r.Moveable == 0) continue;
+                double rate = (double)r.Waypoints / r.Moveable;
+                if (rate > bestRate) { best = map; bestResult = r; bestRate = rate; bestSeed = seed; }
+                if (rate >= target - 0.02) break;
+            }
+            }
+            previous = pattern;
+
+            best.id = n;
+            best.themeId = themeId;
+            best.mapName = $"{ThemeNames[themeId - 1]} {(n - 1) % MapsPerTheme + 1}";
+            MapInfo info = MapCsv.ToInfo(best);
+            string text = MapCsv.WriteMap(best);
+
+            // 書いた CSV を読み直して検証
+            MapData check = MapCsv.ParseMap(info, text);
+            bool ok = check.ValidatePath(out string error) && check.difficulty == difficulty;
+            File.WriteAllText(Path.Combine(folder, "maps", $"map_{n:000000}.csv"), text, MapCsv.FileEncoding);
+            list.Add(info);
+            Console.WriteLine($"{n,2} lv{difficulty,2} {ThemeNames[themeId - 1],-8} {pattern,-9} seed{bestSeed,6} {bestResult.Width,2}x{bestResult.Height,-2} wp{bestResult.Waypoints,4} ({bestRate:P0}/{target:P0}) ob{bestResult.Obstructs,3} fr{bestResult.Free,3} br{bestResult.Bridges} unlock{MapGenerator.GetGoalUnlockRate(difficulty):P0} {(ok ? "OK" : "NG " + error)}");
+        }
+        File.WriteAllText(Path.Combine(folder, "map_list.csv"), MapCsv.WriteList(list), MapCsv.FileEncoding);
+    }
+}

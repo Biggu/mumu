@@ -1,0 +1,228 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: UI Shared Data
+  m_EditorClassIdentifier: 
+  m_TableCollectionName: UI
+  m_TableCollectionNameGuidString: 93f54dfa4b8742c4991c6c146f08b005
+  m_Entries:
+  - m_Id: 952201216
+    m_Key: TITLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 989949952
+    m_Key: START
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10076928700416
+    m_Key: CATCHPHRASE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10076966449152
+    m_Key: SETTINGS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10076966449153
+    m_Key: SE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10076966449154
+    m_Key: BGM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 48977793871872
+    m_Key: MENU
+    m_Metadata:
+      m_Items: []
+  - m_Id: 48977823232000
+    m_Key: RETRY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 48977827426304
+    m_Key: TO_TITLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 54563851825152
+    m_Key: ADVENTURE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 54563881185280
+    m_Key: STROLL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 54563881185281
+    m_Key: STAGE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 54563885379584
+    m_Key: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 54563885379585
+    m_Key: YES
+    m_Metadata:
+      m_Items: []
+  - m_Id: 54563885379586
+    m_Key: NO
+    m_Metadata:
+      m_Items: []
+  - m_Id: 54563885379587
+    m_Key: CONFIRM_TITLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 54563885379588
+    m_Key: CONFIRM_RETRY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 54563885379589
+    m_Key: CONFIRM_TO_TITLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 54563885379590
+    m_Key: ALL_CLEAR_TITLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 54563885379591
+    m_Key: ALL_CLEAR_BODY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 68878021521408
+    m_Key: GARDEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 68878059270144
+    m_Key: GARDEN_COUNT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 68878059270145
+    m_Key: GARDEN_EMPTY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 68878059270146
+    m_Key: UNKNOWN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 68878059270147
+    m_Key: CLEAR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 68878059270148
+    m_Key: PERFECT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 68878059270149
+    m_Key: PUG_JOINED_TITLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 68878059270150
+    m_Key: PUG_JOINED_BODY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 76568915439616
+    m_Key: STROLL_DAILY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 76568944799744
+    m_Key: DAILY_DONE_TITLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 76568944799745
+    m_Key: DAILY_DONE_BODY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 76568944799746
+    m_Key: STAGE_RANGE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 76568944799747
+    m_Key: PLAY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 88951276793856
+    m_Key: GARDEN_STATUS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 88951314542592
+    m_Key: GIMMICK_NEW_TITLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 94519563481088
+    m_Key: PUG_BOOK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 94519567675392
+    m_Key: PUG_BOOK_BONES
+    m_Metadata:
+      m_Items: []
+  - m_Id: 94519567675393
+    m_Key: PUG_BUY_TITLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 94519567675394
+    m_Key: PUG_BUY_BODY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 94519567675395
+    m_Key: PUG_BUY_SHORT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 94519567675396
+    m_Key: PUG_NOT_FOR_SALE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 100386711105536
+    m_Key: TOAST_GATE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 100386715299840
+    m_Key: TOAST_CRUMBLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 100386715299841
+    m_Key: TOAST_CRUMBLE_LOCKED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 111827254079488
+    m_Key: PUG_DUPLICATE_TITLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 111827262468096
+    m_Key: PUG_DUPLICATE_BODY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 111827262468097
+    m_Key: PUG_OWNED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 111827262468098
+    m_Key: PUG_EQUIP
+    m_Metadata:
+      m_Items: []
+  - m_Id: 111827262468099
+    m_Key: PUG_UNEQUIP
+    m_Metadata:
+      m_Items: []
+  - m_Id: 111827262468100
+    m_Key: PUG_EQUIPPED
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 4979853520255320351
+  references:
+    version: 2
+    RefIds:
+    - rid: 4979853520255320351
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1795061160270
