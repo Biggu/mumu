@@ -137,6 +137,36 @@ namespace mumu
         }
 
         /// <summary>
+        /// 指定した画面の位置が画面の中心に来るよう、なめらかに移動（倍率は変えない）
+        /// </summary>
+        /// <param name="_screenPosition"></param>
+        /// <param name="_camera"></param>
+        public void FocusScreenPoint(Vector2 _screenPosition, Camera _camera)
+        {
+            float scale = content.localScale.x;
+
+            // 指の下にあるマップ上の点を求めて、それが中心に来る位置へ動かす
+            Vector2 pivot = toViewport(_screenPosition, _camera);
+            Vector2 contentPoint = (pivot - content.anchoredPosition) / scale;
+            Vector2 target = clamp(-contentPoint * scale, scale);
+
+            focusAsync(target, scale, FocusDuration, TokenUtility.Restart(ref focusCts, destroyCancellationToken)).Forget();
+        }
+
+        /// <summary>
+        /// 経路の先端（フォーカス位置）が、指定した画面の位置に来るよう瞬時に移動（倍率は変えない）
+        /// </summary>
+        /// <param name="_screenPosition"></param>
+        /// <param name="_camera"></param>
+        public void MoveHeadTo(Vector2 _screenPosition, Camera _camera)
+        {
+            CancelFocus();
+            float scale = content.localScale.x;
+            Vector2 pivot = toViewport(_screenPosition, _camera);
+            content.anchoredPosition = clamp(pivot - map.GetFocusPosition() * scale, scale);
+        }
+
+        /// <summary>
         /// 移動アニメーションを止める
         /// </summary>
         public void CancelFocus()

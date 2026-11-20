@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa5f7268782bcbe47928a83262f0b1d7, type: 3}
   m_Name: MapInputSettings
   m_EditorClassIdentifier: 
-  DragDelayPerBlock: 0.2
-  NoDragRange: 2
+  DragDelayPerBlock: 0
+  NoDragRange: 3
   DragStepRate: 0.5
   FitRateX: 0.85
   FitRateY: 0.75

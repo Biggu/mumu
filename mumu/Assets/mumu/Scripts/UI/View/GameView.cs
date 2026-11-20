@@ -142,6 +142,7 @@ namespace mumu
                 updateGauge();
                 updateBones();
             }
+            bgImage.transform.SetAsFirstSibling();
 
             if (menuButton != null)
             {

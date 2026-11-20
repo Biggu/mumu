@@ -21,12 +21,18 @@ namespace mumu
         private Camera eventCamera = null;
         private readonly TapDetector tapDetector = new TapDetector();
 
+        /// <summary>経路をドラッグしている指（一時停止中は NoPointer）</summary>
         private int pathPointerId = NoPointer;
+        /// <summary>経路のドラッグ中か（一時停止・移動に切り替えていても true）</summary>
+        private bool isPathDragging = false;
+        /// <summary>経路をドラッグしている指の最新の位置</summary>
+        private Vector2 routeFingerPosition = Vector2.zero;
         /// <summary>経路を最後に1マス進めた時刻（ドラッグの待ち時間に使う）</summary>
         private float lastStepTime = float.MinValue;
         private Vector2 lastPathPosition = Vector2.zero;
         /// <summary>経路ドラッグ開始前の先端（離した時に変わっていたらカメラを寄せる）</summary>
         private Vector2Int headBeforeDrag = Vector2Int.zero;
+
         /// <summary>移動・ピンチ中の指（pointerId → スクリーン座標）</summary>
         private readonly Dictionary<int, Vector2> viewPointers = new Dictionary<int, Vector2>();
 
@@ -34,6 +40,9 @@ namespace mumu
         private int pressedCount = 0;
         /// <summary>今回の操作中に2本指になったか（ピンチはタップにしない）</summary>
         private bool isMultiTouch = false;
+
+        /// <summary>エディタで Space を押しているか（前フレームの状態）</summary>
+        private bool wasSpaceHeld = false;
 
         /// <summary>入力を受け付けるか</summary>
         private bool isInputEnabled = true;
@@ -63,7 +72,37 @@ namespace mumu
         }
 
         /// <summary>
-        /// 押下（1本目の指が経路上なら経路ドラッグ。それ以外は移動・ピンチ用に登録）
+        /// エディタで Space の押下・解放を監視する（経路ドラッグ中の一時停止と再開）
+        /// 実機では Space は押されないので何もしない
+        /// </summary>
+        private void Update()
+        {
+            bool isSpaceHeld = canPanWithSinglePointer();
+            if (isSpaceHeld == wasSpaceHeld)
+            {
+                return;
+            }
+            wasSpaceHeld = isSpaceHeld;
+
+            if (!isInputEnabled || !isPathDragging)
+            {
+                return;
+            }
+
+            if (isSpaceHeld && pathPointerId != NoPointer)
+            {
+                // Space を押した：経路のドラッグを止めて、マウスで移動に切り替える
+                pauseRouteDrag();
+            }
+            else if (!isSpaceHeld && pathPointerId == NoPointer && viewPointers.Count == 1)
+            {
+                // Space を離した（マウスは押したまま）：経路のドラッグを再開する
+                resumePathDrag();
+            }
+        }
+
+        /// <summary>
+        /// 押下（1本目の指が経路上なら経路ドラッグ。ドラッグ中に2本目が来たら移動・ピンチに切り替える）
         /// </summary>
         /// <param name="_eventData"></param>
         public void OnPointerDown(PointerEventData _eventData)
@@ -85,12 +124,21 @@ namespace mumu
                 isMultiTouch = true;
             }
 
-            if (pathPointerId != NoPointer)
+            eventCamera = _eventData.pressEventCamera;
+
+            // 経路のドラッグ中に指が増えた：経路のドラッグを一時停止して、移動・ピンチに切り替える
+            if (isPathDragging)
             {
+                if (pathPointerId != NoPointer)
+                {
+                    pauseRouteDrag();
+                }
+                if (viewPointers.Count < 2)
+                {
+                    viewPointers[_eventData.pointerId] = _eventData.position;
+                }
                 return;
             }
-
-            eventCamera = _eventData.pressEventCamera;
 
             // 経路ドラッグは、エディタでスペースを押していない時だけ始められる
             if (viewPointers.Count == 0 && !canPanWithSinglePointer())
@@ -100,9 +148,14 @@ namespace mumu
                 {
                     case ePressTarget.PathHead:
                     case ePressTarget.NearHead:
+                        isPathDragging = true;
                         pathPointerId = _eventData.pointerId;
+                        routeFingerPosition = _eventData.position;
                         lastPathPosition = _eventData.position;
                         headBeforeDrag = headBefore;
+
+                        // ドラッグ開始：指の位置を画面の中心へ
+                        view.MoveHeadTo(_eventData.position, eventCamera);
                         return;
                 }
             }
@@ -136,6 +189,7 @@ namespace mumu
 
             if (_eventData.pointerId == pathPointerId)
             {
+                routeFingerPosition = _eventData.position;
                 dragPath(_eventData.position);
                 return;
             }
@@ -162,7 +216,7 @@ namespace mumu
         }
 
         /// <summary>
-        /// 指を離した（経路の先端が変わっていたら寄せる。タップならダブルタップ判定）
+        /// 指を離した（2本指から1本になったら経路のドラッグを再開。全部離したら終了し、タップならダブルタップ判定）
         /// </summary>
         /// <param name="_eventData"></param>
         public void OnPointerUp(PointerEventData _eventData)
@@ -172,15 +226,37 @@ namespace mumu
                 return;
             }
 
-            if (_eventData.pointerId == pathPointerId)
+            int pointerId = _eventData.pointerId;
+            if (isPathDragging)
             {
-                pathPointerId = NoPointer;
-                if (map.Path.Head != headBeforeDrag)
+                if (pointerId == pathPointerId)
                 {
-                    view.FocusHead(view.Scale);
+                    // 経路の指を離した（他に指がなければ終了）
+                    pathPointerId = NoPointer;
+                    if (viewPointers.Count == 0)
+                    {
+                        endPathDrag();
+                    }
+                }
+                else if (viewPointers.Remove(pointerId))
+                {
+                    if (viewPointers.Count == 1 && pathPointerId == NoPointer)
+                    {
+                        // 2本指（または Space 移動）から1本へ：指を離さずに経路のドラッグを続ける
+                        resumePathDrag();
+                    }
+                    else if (viewPointers.Count == 0 && pathPointerId == NoPointer)
+                    {
+                        // 一時停止中の指を全部離した：終了
+                        endPathDrag();
+                    }
                 }
             }
-            viewPointers.Remove(_eventData.pointerId);
+            else
+            {
+                viewPointers.Remove(pointerId);
+            }
+
             pressedCount = Mathf.Max(0, pressedCount - 1);
 
             if (pressedCount == 0 && !isMultiTouch && tapDetector.OnRelease(_eventData.position))
@@ -224,6 +300,8 @@ namespace mumu
         private void resetPointers()
         {
             pathPointerId = NoPointer;
+            isPathDragging = false;
+            routeFingerPosition = Vector2.zero;
             viewPointers.Clear();
             pressedCount = 0;
         }
@@ -242,26 +320,69 @@ namespace mumu
         }
 
         /// <summary>
-        /// 前回位置から今の位置までの方向へ経路を1マス進める（起点は進んだ位置へ移す）
+        /// 経路のドラッグを一時停止する。先端を1本目の指の位置へ移し、その指は移動用の指として登録し直す
         /// </summary>
-        /// <param name="_position"></param>
-        private void dragPath(Vector2 _position)
+        private void pauseRouteDrag()
         {
-            // 待ち時間の間は進まない（起点は動かさないので、指の移動はあとからまとめて効く）
-            float delay = MapInputSettings.Current.DragDelayPerBlock;
-            if (delay > 0f && Time.unscaledTime - lastStepTime < delay)
+            view.MoveHeadTo(routeFingerPosition, eventCamera);
+
+            viewPointers[pathPointerId] = routeFingerPosition;
+            pathPointerId = NoPointer;
+        }
+
+        /// <summary>
+        /// 一時停止していた経路のドラッグを、残った1本の指で再開する（開始位置・回数はそのまま続ける）
+        /// </summary>
+        private void resumePathDrag()
+        {
+            int remainingId = NoPointer;
+            Vector2 remainingPosition = Vector2.zero;
+            foreach (var pair in viewPointers)
             {
-                return;
-            }
-            if (!map.TryGetDragDirection(lastPathPosition, _position, eventCamera, out Vector2Int direction))
-            {
-                return;
+                remainingId = pair.Key;
+                remainingPosition = pair.Value;
             }
 
-            map.DragStep(direction);
-            lastPathPosition = _position;
-            lastStepTime = Time.unscaledTime;
+            viewPointers.Clear();
+            pathPointerId = remainingId;
+            routeFingerPosition = remainingPosition;
+            lastPathPosition = remainingPosition;
         }
+
+        /// <summary>
+        /// 経路のドラッグを終了（先端が変わっていたら寄せる）
+        /// </summary>
+        private void endPathDrag()
+        {
+            isPathDragging = false;
+            if (map.Path.Head != headBeforeDrag)
+            {
+                view.FocusHead(view.Scale);
+            }
+        }
+
+/// <summary>
+/// 前回位置から今の位置までの方向へ経路を1マス進める（起点は進んだ位置へ移す）
+/// カメラは動かさない（戻る時も）
+/// </summary>
+/// <param name="_position"></param>
+private void dragPath(Vector2 _position)
+{
+    // 待ち時間の間は進まない（起点は動かさないので、指の移動はあとからまとめて効く）
+    float delay = MapInputSettings.Current.DragDelayPerBlock;
+    if (delay > 0f && Time.unscaledTime - lastStepTime < delay)
+    {
+        return;
+    }
+    if (!map.TryGetDragDirection(lastPathPosition, _position, eventCamera, out Vector2Int direction))
+    {
+        return;
+    }
+
+    map.DragStep(direction);
+    lastPathPosition = _position;
+    lastStepTime = Time.unscaledTime;
+}
 
         /// <summary>
         /// もう1本の指の位置
