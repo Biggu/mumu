@@ -1,0 +1,80 @@
+つなパグ（Pug Path）サウンド制作メモ
+場所: Assets/mumu/Resources/Sound/SE/ と Assets/mumu/Resources/Sound/BGM/
+形式: wav。ファイル名は変えない。今は仮の音（コピー）が入っている。
+
+================================================================
+SE（効果音）
+================================================================
+se_000001 click sound pixel style 0.2sec
+se_000002 popup open sound pixel style cheerful 0.3sec   ※コードでは今 Bark1（おにわの子が喜ぶ）に使用中。下の注意を見てください
+se_000003 bark sound pixel style short 0.3sec（進めない時・Bark2）
+se_000004 block gain sound pixel style soft pop 0.15sec（1マス進めた）
+se_000005 block gain2 sound pixel style bright sparkle pop 0.3sec（チェックポイント・Goal 解放）
+se_000006 block minus sound pixel style falling bloop 0.15sec（巻き戻した）
+se_000007 win jingle pixel style happy short fanfare 2sec（クリア）
+se_000008 bird fly sound pixel style tiny chirp flutter 0.5sec（タイトルを開いた時）
+se_000009 key get sound pixel style click clink 0.3sec（カギを拾った）
+se_000010 gate open sound pixel style heavy creak 0.6sec（扉が開いた）
+se_000011 coin get sound pixel style chime coin 0.4sec（ほねが増えた）
+se_000012 crack wood sound pixel style short crack 0.4sec（こわれる橋が壊れた）
+se_000013 warp sound pixel style whoosh 0.4sec（ワープ）
+se_000014 star ping sound pixel style ascending ping 0.2sec（星が1つずつ点いた）
+se_000015 sparkle sound pixel style twinkle 0.5sec（大きな星になった）
+se_000016 bonus coin sound pixel style cheerful coins 0.8sec（もどらずボーナス）
+se_000017 fanfare sound pixel style short crown 1.5sec（PERFECT の王冠）
+se_000018 chime sound pixel style soft bell 0.6sec（テーマのおはなし）
+se_000019 notice ping sound pixel style small blip 0.2sec（通知）
+se_000020 toast pop sound pixel style small pop 0.15sec（画面下のお知らせ）
+se_000021 popup open sound pixel style cheerful 0.3sec（ダイアログが開く・se_000002 と同じ内容。どちらを使うか決めてください）
+se_000022 popup close sound pixel style soft 0.2sec（ダイアログが閉じる）
+se_000023 hint chime sound pixel style twinkle ping 0.5sec（ヒントを使った）
+se_000024 snore sound pixel style very soft 1.0sec（パグが寝る。とても小さく）
+se_000025 happy bark sound pixel style happy two barks 0.8sec（パグが仲間になった）
+se_000026 page flip sound pixel style paper flip 0.4sec（ステージマップのページ）
+se_000027 footstep sound pixel style short step 0.15sec（男の子が歩く）
+se_000028 alert chime sound pixel style gentle warning 0.6sec（今日のおさんぽが終わった）
+
+※ se_000002 の注意
+  メモの例では se_000002 = popup open。今のコードでは se_000002 は「おにわの子が喜ぶ（吠える）」に使っている。
+  どちらにするか決めてください（メモどおりにするならコードの番号を変えます）。
+
+================================================================
+BGM（音楽）: 名前 / 長さ / 雰囲気（すべてループ）
+================================================================
+bgm_000 title playful pixel beat 20sec（タイトル。遊び心のあるドット絵のビート）
+bgm_001 theme1 meadow wood peaceful butterfly relax loop 50sec（草原。木とチョウの、のどかな曲）
+bgm_002 theme2 summer beach bright bouncy loop 45sec（夏。海と日差しの明るくはずむ曲）
+bgm_003 theme3 winter snow quiet cozy loop 50sec（冬。雪の夜の静かで、あたたかい曲）
+bgm_004 theme4 autumn leaves warm mellow loop 50sec（秋。落ち葉の、ほっとする暖かい曲）
+bgm_005 theme5 spring fresh hopeful light loop 45sec（春。芽吹きの、明るく希望のある曲）
+bgm_006 theme6 sakura petals dreamy gentle loop 55sec（桜。花びらが舞う、ふんわり夢のような曲）
+bgm_007 theme7 desert adventure curious loop 50sec（砂漠。少しなぞめいた冒険の曲）
+bgm_008 theme8 cake sweet cheerful loop 40sec（ケーキ。甘くて一番陽気な曲）
+bgm_009 theme9 pudding wobbly silly loop 40sec（プリン。ぷるぷる、ちょっとおかしい曲）
+bgm_010 theme10 city busy upbeat loop 45sec（町。にぎやかで軽いグルーヴの曲）
+bgm_011 theme11 village festival friendly loop 50sec（村。祭りのような、人なつっこい曲）
+bgm_012 theme12 sea waves breezy loop 55sec（海。波と風の、のんびり涼しい曲）
+bgm_013 theme13 ice crisp calm loop 50sec（氷。澄んだ冷たさの中に楽しさがある曲）
+bgm_014 theme14 office quirky light loop 40sec（オフィス。少しとぼけた、ユーモラスな曲）
+bgm_015 theme15 space station calm synth drift loop 50sec（宇宙ステーション。電子音のうすい響きと、ゆっくりした宇宙の静けさ）
+bgm_016 theme16 underwater bubbly dreamy sway loop 55sec（海の底。ぽこぽこ泡と、ゆらゆら揺れる夢のような曲）
+bgm_017 theme17 moon forest mysterious soft night loop 50sec（月の森。夜の森のしずかで少しふしぎな曲。ほたるが飛ぶ感じ）
+bgm_018 theme18 castle march light proud loop 50sec（お城。小さな行進曲ふうの、りりしく明るい曲）
+bgm_019 theme19 mountain open breezy adventure loop 50sec（山。風の吹く、広くて爽快な冒険の曲）
+bgm_020 night theme1 meadow slower softer loop 50sec（夜の草原。テーマ1の曲をゆっくり静かにした版）
+bgm_021 night theme2 summer slower softer loop 45sec（夜の夏。テーマ2の曲をゆっくり静かにした版）
+bgm_022 night theme3 winter slower softer loop 50sec（夜の冬。テーマ3の曲をゆっくり静かにした版）
+bgm_023 night theme4 autumn slower softer loop 50sec（夜の秋。テーマ4の曲をゆっくり静かにした版）
+bgm_024 night theme5 spring slower softer loop 45sec（夜の春。テーマ5の曲をゆっくり静かにした版）
+bgm_025 night theme6 sakura slower softer loop 55sec（夜の桜。テーマ6の曲をゆっくり静かにした版）
+bgm_026 night theme7 desert slower softer loop 50sec（夜の砂漠。テーマ7の曲をゆっくり静かにした版）
+bgm_027 night theme8 cake slower softer loop 40sec（夜のケーキ。テーマ8の曲をゆっくり静かにした版）
+bgm_028 night theme9 pudding slower softer loop 40sec（夜のプリン。テーマ9の曲をゆっくり静かにした版）
+bgm_029 night theme10 city slower softer loop 45sec（夜の町。テーマ10の曲をゆっくり静かにした版）
+bgm_030 night theme11 village slower softer loop 50sec（夜の村。テーマ11の曲をゆっくり静かにした版）
+bgm_031 night theme12 sea slower softer loop 55sec（夜の海。テーマ12の曲をゆっくり静かにした版）
+bgm_032 night theme13 ice slower softer loop 50sec（夜の氷。テーマ13の曲をゆっくり静かにした版）
+bgm_033 night theme14 office slower softer loop 40sec（夜のオフィス。テーマ14の曲をゆっくり静かにした版）
+
+※ タイトルは bgm_000 を使う（コード TitleBgmId = 0）。bgm_999 は使わなくなった（ファイルは残してあるので、削除してよい）
+※ 曲のないテーマ（ファイルがない bgm_NNN）は bgm_000（タイトルの曲）になる。

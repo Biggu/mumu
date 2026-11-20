@@ -124,7 +124,7 @@ MonoBehaviour:
   textComponent: {fileID: 3244014305023096942}
   longPressTime: 1
   repeatInterval: 0.1
-  clickSe: 900001
+  clickSe: 1
   isClickSeEnabled: 1
 --- !u!1 &1639373038723110918
 GameObject:
@@ -750,7 +750,7 @@ MonoBehaviour:
   textComponent: {fileID: 0}
   longPressTime: 1
   repeatInterval: 0.1
-  clickSe: 900001
+  clickSe: 1
   isClickSeEnabled: 1
 --- !u!1 &8657177447366539601
 GameObject:

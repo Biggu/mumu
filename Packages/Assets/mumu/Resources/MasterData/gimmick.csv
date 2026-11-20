@@ -1,8 +1,0 @@
-id,key,name_ja,name_en,desc_ja,desc_en,sprite,unlock_stage
-1,arrow,やじるし,One-way,やじるしの むきにしか とおれないよ。,You can only pass in the arrow's direction.,gimmick_arrow,4
-2,turn,まがりかど,Turn,この マスでは かならず まがってね。,You must turn on this tile.,gimmick_turn,7
-3,straight,まっすぐ,Straight,この マスは まっすぐ とおりぬけてね。,Go straight through this tile.,gimmick_straight,10
-4,treasure,たからばこ,Treasure,とおると ほねが もらえるよ。きの はこ 2こ・ぎんの はこ 4こ・きんの はこ 10こ！,Walk over a chest to get bones: wood 2 / silver 4 / gold 10!,gimmick_treasure3,0
-5,key,カギと とびら,Key & Gate,おなじ いろの カギを とおると とびらが ひらくよ。,Pass the key to open the gate of the same color.,gimmick_key,13
-6,warp,ワープ,Warp,いりぐちに のると でぐちへ とぶよ。でぐちを もう とおっていたら とばないよ。,Step on the entrance to jump to the exit (unless you already passed the exit).,gimmick_warp_in,16
-7,crumble,こわれる はし,Crumbling Bridge,おりると こわれて もう もどれないよ。,It breaks after you step off. No going back!,gimmick_crumble,19

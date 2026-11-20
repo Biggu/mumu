@@ -52,6 +52,8 @@ namespace mumu
                     instance = FindAnyObjectByType<T>();
                     if (instance == null)
                     {
+                        // シーンに無いので空の物を作る（動かすためだが、システムシーンの設定漏れに気付けるようエラーを出す）
+                        Debug.LogError($"[MonoSingleton] {typeof(T).Name} がシーンにありません。空の物を作りました（system シーンを確認）");
                         // AddComponent 内で Awake が走り DontDestroyOnLoad される
                         instance = new GameObject(typeof(T).Name).AddComponent<T>();
                     }

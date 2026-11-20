@@ -51,11 +51,7 @@ namespace mumu
 
             if (pugIcon != null && pugSprites != null)
             {
-                pugAnimation = pugIcon.GetComponent<SpriteFrameAnimation>();
-                if (pugAnimation == null)
-                {
-                    pugAnimation = pugIcon.gameObject.AddComponent<SpriteFrameAnimation>();
-                }
+                pugAnimation = CommonUtility.GetOrAddComponent<SpriteFrameAnimation>(pugIcon.gameObject);
                 pugAnimation.Play(pugSprites.GirlCry, CryFps);
             }
             SetRemaining(_required, false);

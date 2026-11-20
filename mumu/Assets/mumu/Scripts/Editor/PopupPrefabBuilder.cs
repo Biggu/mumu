@@ -15,7 +15,9 @@ namespace mumu
     {
         private const string Folder = "Assets/mumu/Resources/" + PopupLoader.Folder;
         private const float RowHeight = 110f;
+        private const string BoneSpritePath = "Assets/mumu/Resources/Sprites/Common/gimmick_bone.png";
         private const float MenuButtonHeight = 108f;
+        private const string StampKey = "PopupPrefabBuilder";
 
         /// <summary>
         /// コンパイル後に自動実行を予約
@@ -34,14 +36,36 @@ namespace mumu
             {
                 return;
             }
-            // アイコン追加前のダイアログも作り直す
-            var dialog = AssetDatabase.LoadAssetAtPath<GameObject>(getPath(MessageDialog.PrefabName));
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(getPath(SettingsPopup.PrefabName)) == null
-                || !hasChild(getPath(PugBookPopup.PrefabName), "panel/tabs")
-                || dialog == null || dialog.transform.Find("panel/icon") == null)
+            if (!EditorBuildStamp.NeedsBuild(StampKey, isBuilt(), getPaths()))
             {
-                Build();
+                return;
             }
+            EditorBuildStamp.Save(StampKey);
+            Build();
+        }
+
+        /// <summary>
+        /// ポップアップが今の構成で作られているか
+        /// </summary>
+        private static bool isBuilt()
+        {
+            var dialog = AssetDatabase.LoadAssetAtPath<GameObject>(getPath(MessageDialog.PrefabName));
+            return dialog != null && dialog.transform.Find("panel/icon") != null && dialog.transform.Find("panel/closeButton") != null
+                && AssetDatabase.LoadAssetAtPath<GameObject>(getPath(SettingsPopup.PrefabName)) != null
+                && hasChild(getPath(ConfirmDialog.PrefabName), "panel/closeButton")
+                && hasChild(getPath(PugBookPopup.PrefabName), "panel/tabs")
+                && hasChild(getPath(BoneBonusOverlay.PrefabName), "text")
+                && hasChild(getPath(BoneBonusOverlay.PrefabName), "detail")
+                && hasChild(getPath(Toast.PrefabName), "text")
+                && hasChild(getPath(ThemeStory.PrefabName), "text");
+        }
+
+        /// <summary>
+        /// 作るプレハブのパス
+        /// </summary>
+        private static string[] getPaths()
+        {
+            return new[] { getPath(MessageDialog.PrefabName), getPath(SettingsPopup.PrefabName), getPath(ConfirmDialog.PrefabName), getPath(PugBookPopup.PrefabName), getPath(BoneBonusOverlay.PrefabName), getPath(Toast.PrefabName), getPath(ThemeStory.PrefabName) };
         }
 
         /// <summary>
@@ -65,7 +89,12 @@ namespace mumu
             EditorAssetUtility.EnsureFolder(Folder);
             save(buildSettingsPopup(), SettingsPopup.PrefabName);
             save(buildMessageDialog(), MessageDialog.PrefabName);
+            save(buildConfirmDialog(), ConfirmDialog.PrefabName);
             save(buildPugBook(), PugBookPopup.PrefabName);
+            save(buildBoneBonus(), BoneBonusOverlay.PrefabName);
+            save(buildToast(), Toast.PrefabName);
+            save(buildThemeStory(), ThemeStory.PrefabName);
+            EditorBuildStamp.Save(StampKey);
             Debug.Log("[PopupPrefabBuilder] Popups built");
         }
 
@@ -196,7 +225,41 @@ namespace mumu
             SetField(dialog, "yesButton", yesButton);
             SetField(dialog, "noButton", noButton);
             SetField(dialog, "dimButton", dimButton);
+            MumuButton closeButton = BuildCloseButton(panel);
             SetField(dialog, "iconImage", iconImage);
+            SetField(dialog, "closeButton", closeButton);
+            return root.gameObject;
+        }
+
+        /// <summary>
+        /// 2つのボタンの確認（見出しと左右のボタン。おにわ・ずかんで共通）
+        /// </summary>
+        private static GameObject buildConfirmDialog()
+        {
+            RectTransform root = createRoot(ConfirmDialog.PrefabName);
+            var dialog = root.gameObject.AddComponent<ConfirmDialog>();
+            MumuButton dimButton = BuildDim(root);
+
+            RectTransform panel = Create("panel", root);
+            SetRect(panel, Vector2.one * 0.5f, Vector2.one * 0.5f, Vector2.zero, new Vector2(640f, 300f));
+            AddImage(panel, LoadSprite("ui_panel"), Color.white, true, Image.Type.Sliced);
+
+            var top = new Vector2(0.5f, 1f);
+            RectTransform title = Create("title", panel);
+            SetRect(title, top, top, new Vector2(0f, -40f), new Vector2(580f, 72f));
+            TMP_Text titleText = AddPlainText(title, "Title", 40, TextBrown);
+
+            var bottom = new Vector2(0.5f, 0f);
+            MumuButton firstButton = buildDialogButton(panel, "firstButton", new Vector2(-150f, 48f), bottom);
+            MumuButton secondButton = buildDialogButton(panel, "secondButton", new Vector2(150f, 48f), bottom);
+
+            SetField(dialog, "panel", panel);
+            SetField(dialog, "titleText", titleText);
+            SetField(dialog, "firstButton", firstButton);
+            MumuButton closeButton = BuildCloseButton(panel);
+            SetField(dialog, "secondButton", secondButton);
+            SetField(dialog, "closeButton", closeButton);
+            SetField(dialog, "dimButton", dimButton);
             return root.gameObject;
         }
 
@@ -282,6 +345,91 @@ namespace mumu
             SetField(popup, "boneText", boneText);
             SetField(popup, "content", content);
             SetArrayField(popup, "tierTabs", tierTabs);
+            return root.gameObject;
+        }
+
+        /// <summary>
+        /// テーマのおはなし（真ん中の板に一行。文字は ThemeStory が入れる）
+        /// </summary>
+        private static GameObject buildThemeStory()
+        {
+            var go = new GameObject(ThemeStory.PrefabName, typeof(RectTransform));
+            go.layer = LayerMask.NameToLayer("UI");
+            RectTransform root = (RectTransform)go.transform;
+            var center = Vector2.one * 0.5f;
+            SetRect(root, center, center, Vector2.zero, new Vector2(680f, 220f));
+            root.gameObject.AddComponent<CanvasGroup>().blocksRaycasts = false;
+            AddImage(root, LoadSprite("ui_plate"), Color.white, false, Image.Type.Sliced);
+
+            RectTransform text = Stretch(Create("text", root));
+            text.offsetMin = new Vector2(48f, 24f);
+            text.offsetMax = new Vector2(-48f, -24f);
+            TMP_Text message = AddPlainText(text, "", 36, TextBrown);
+            message.textWrappingMode = TextWrappingModes.Normal;
+            message.enableAutoSizing = true;
+            message.fontSizeMin = 22f;
+            message.fontSizeMax = 36f;
+            return root.gameObject;
+        }
+
+        /// <summary>
+        /// 画面下のお知らせ（ふわっと出る板。文字は Toast が入れる）
+        /// </summary>
+        private static GameObject buildToast()
+        {
+            var go = new GameObject(Toast.PrefabName, typeof(RectTransform));
+            go.layer = LayerMask.NameToLayer("UI");
+            RectTransform root = (RectTransform)go.transform;
+            var bottom = new Vector2(0.5f, 0f);
+            SetRect(root, bottom, bottom, new Vector2(0f, 220f), new Vector2(760f, 110f));
+            root.gameObject.AddComponent<CanvasGroup>().blocksRaycasts = false;
+            AddImage(root, LoadSprite("ui_plate"), Color.white, false, Image.Type.Sliced);
+
+            RectTransform text = Stretch(Create("text", root));
+            text.offsetMin = new Vector2(24f, 12f);
+            text.offsetMax = new Vector2(-24f, -12f);
+            TMP_Text message = AddPlainText(text, "", 30, new Color(1f, 0.95f, 0.75f));
+            message.enableAutoSizing = true;
+            message.fontSizeMin = 18f;
+            message.fontSizeMax = 30f;
+            return root.gameObject;
+        }
+
+        /// <summary>
+        /// ボーナスの表示（上に出る。ほねの絵と文字。文字は BoneBonusOverlay が入れる）
+        /// </summary>
+        private static GameObject buildBoneBonus()
+        {
+            var go = new GameObject(BoneBonusOverlay.PrefabName, typeof(RectTransform));
+            go.layer = LayerMask.NameToLayer("UI");
+            RectTransform root = (RectTransform)go.transform;
+            var top = new Vector2(0.5f, 1f);
+            SetRect(root, top, top, new Vector2(0f, -140f), new Vector2(480f, 170f));
+            root.gameObject.AddComponent<CanvasGroup>();
+
+            RectTransform plate = Stretch(Create("plate", root));
+            AddImage(plate, LoadSprite("ui_plate"), Color.white, false, Image.Type.Sliced);
+
+            RectTransform bone = Create("bone", root);
+            SetRect(bone, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(64f, 0f), new Vector2(56f, 40f));
+            AddImage(bone, AssetDatabase.LoadAssetAtPath<Sprite>(BoneSpritePath), Color.white, false);
+
+            RectTransform text = Create("text", root);
+            SetRect(text, Vector2.one * 0.5f, Vector2.one * 0.5f, new Vector2(40f, 28f), new Vector2(340f, 60f));
+            TMP_Text message = AddPlainText(text, "", 32, TextBrown);
+            message.textWrappingMode = TextWrappingModes.Normal;
+            message.enableAutoSizing = true;
+            message.fontSizeMin = 20f;
+            message.fontSizeMax = 32f;
+
+            // ボーナスの下の詳しい説明（ワンだふるボーナスの条件）
+            RectTransform detail = Create("detail", root);
+            SetRect(detail, Vector2.one * 0.5f, Vector2.one * 0.5f, new Vector2(40f, -34f), new Vector2(400f, 40f));
+            TMP_Text detailText = AddPlainText(detail, "", 24, TextBrown);
+            detailText.textWrappingMode = TextWrappingModes.Normal;
+            detailText.enableAutoSizing = true;
+            detailText.fontSizeMin = 16f;
+            detailText.fontSizeMax = 24f;
             return root.gameObject;
         }
 

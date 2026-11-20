@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
@@ -10,7 +9,7 @@ namespace mumu
     /// <summary>
     /// ずかん（全キャラクターのグリッド。ほねと交換してなかまにできる）
     /// </summary>
-    public class PugBookPopup : MonoBehaviour
+    public class PugBookPopup : PopupBase
     {
         public const string PrefabName = "pug_book";
 
@@ -84,34 +83,24 @@ namespace mumu
             public GameObject EquippedBadge;
             /// <summary>交換できない子の「おさんぽで あえるかも」</summary>
             public GameObject SecretLabel;
+            /// <summary>1匹分のカード（tier ごとに出し入れする）</summary>
+            public GameObject Root;
         }
 
-        private readonly List<Item> items = new List<Item>();
-        private UniTaskCompletionSource closeSource = null;
+        /// <summary>いま並んでいる tier のカード</summary>
+        private List<Item> items = new List<Item>();
+        /// <summary>tier ごとに作ったカード（一度作ったら作り直さない）</summary>
+        private readonly Dictionary<int, List<Item>> tierItems = new Dictionary<int, List<Item>>();
         private bool isExchanged = false;
         private bool isConfirming = false;
 
         /// <summary>
-        /// 開いて閉じるまで待つ（交換したら true）
+        /// 初期化（ずかんは内容を受け取らない）
         /// </summary>
-        /// <param name="_parent"></param>
-        /// <param name="_token"></param>
-        public static async UniTask<bool> OpenAsync(Transform _parent, CancellationToken _token)
+        /// <param name="_param"></param>
+        public override void Setup(BaseParam _param)
         {
-            PugBookPopup popup = await PopupLoader.InstantiateAsync<PugBookPopup>(PrefabName, _parent, _token);
-            if (popup == null)
-            {
-                return false;
-            }
-
-            popup.setup();
-            await popup.closeSource.Task.AttachExternalCancellation(_token).SuppressCancellationThrow();
-            bool isExchanged = popup.isExchanged;
-            if (popup != null)
-            {
-                Destroy(popup.gameObject);
-            }
-            return isExchanged;
+            setup();
         }
 
         /// <summary>
@@ -119,7 +108,6 @@ namespace mumu
         /// </summary>
         private void setup()
         {
-            closeSource = new UniTaskCompletionSource();
             closeButton.SetOnClick(onClickCloseButton);
             if (dimButton != null)
             {
@@ -158,18 +146,23 @@ namespace mumu
         private void showTier(int _tier)
         {
             selectedTier = _tier;
-            foreach (Item item in items)
+            foreach (List<Item> cards in tierItems.Values)
             {
-                Destroy(item.Icon.transform.parent.gameObject);
+                setCardsActive(cards, false);
             }
-            items.Clear();
-            foreach (CharacterData character in CharacterMaster.All)
+            if (!tierItems.TryGetValue(_tier, out items))
             {
-                if (character.Tier == _tier)
+                items = new List<Item>();
+                foreach (CharacterData character in CharacterMaster.All)
                 {
-                    items.Add(createItem(character));
+                    if (character.Tier == _tier)
+                    {
+                        items.Add(createItem(character));
+                    }
                 }
+                tierItems[_tier] = items;
             }
+            setCardsActive(items, true);
             if (tierTabs != null)
             {
                 for (int i = 0; i < tierTabs.Length; i++)
@@ -179,6 +172,19 @@ namespace mumu
             }
             content.anchoredPosition = Vector2.zero;
             refresh();
+        }
+
+        /// <summary>
+        /// カードの表示を切り替える
+        /// </summary>
+        /// <param name="_cards"></param>
+        /// <param name="_isActive"></param>
+        private static void setCardsActive(List<Item> _cards, bool _isActive)
+        {
+            foreach (Item item in _cards)
+            {
+                item.Root.SetActive(_isActive);
+            }
         }
 
         /// <summary>
@@ -208,7 +214,7 @@ namespace mumu
                 // 持っている子は交換できない（ボタンの代わりに「もってる」）
                 if (item.PriceButton != null)
                 {
-                    item.PriceButton.gameObject.SetActive(count == 0);
+                    item.PriceButton.gameObject.SetActive(item.Character.IsForSale);
                     bool canBuy = bones >= item.Character.Price;
                     item.PriceButtonImage.color = canBuy ? Color.white : DisabledColor;
                 }
@@ -226,21 +232,22 @@ namespace mumu
         private Item createItem(CharacterData _character)
         {
             var item = new Item { Character = _character };
-            Image back = createImage("item", content, ResourceManager.Instance.Load<Sprite>(PanelPath), Vector2.zero);
+            Image back = UiFactory.CreateImage("item", content, ResourceManager.Instance.Load<Sprite>(PanelPath), Vector2.zero);
             back.type = Image.Type.Sliced;
             back.preserveAspect = false;
             Transform root = back.transform;
+            item.Root = back.gameObject;
 
-            Image tierBack = createImage("tier", root, null, Vector2.zero);
+            Image tierBack = UiFactory.CreateImage("tier", root, null, Vector2.zero);
             tierBack.color = TierBackColors[Mathf.Clamp(_character.Tier, CharacterMaster.MinTier, CharacterMaster.MaxTier) - 1];
             stretch(tierBack.rectTransform, 8f);
 
             // ずかんはアイコン集から（キャラごとの画像は読み込まない）
-            Image icon = createImage("icon", root, PugIcons.Get(_character.Id), new Vector2(IconSize, IconSize));
+            Image icon = UiFactory.CreateImage("icon", root, PugIcons.Get(_character.Id), new Vector2(IconSize, IconSize));
             place(icon.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -8f));
             item.Icon = icon;
 
-            TMP_Text nameText = createText("name", root, _character.Name, NameFontSize, TextBrown);
+            TMP_Text nameText = UiFactory.CreateText("name", root, _character.Name, NameFontSize, TextBrown);
             item.NameText = nameText;
             place(nameText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -IconSize - 8f));
             nameText.rectTransform.sizeDelta = new Vector2(180f, 30f);
@@ -249,28 +256,28 @@ namespace mumu
             Sprite star = ResourceManager.Instance.Load<Sprite>(StarPath);
             for (int i = 0; i < _character.Tier; i++)
             {
-                Image starImage = createImage("star", root, star, new Vector2(StarSize, StarSize));
+                Image starImage = UiFactory.CreateImage("star", root, star, new Vector2(StarSize, StarSize));
                 place(starImage.rectTransform, new Vector2(0.5f, 1f), new Vector2((i - (_character.Tier - 1) * 0.5f) * StarSize, -IconSize - 42f));
             }
 
-            item.CountText = createText("count", root, "", SmallFontSize, TextBrown);
+            item.CountText = UiFactory.CreateText("count", root, "", SmallFontSize, TextBrown);
             place(item.CountText.rectTransform, Vector2.one, new Vector2(-10f, -8f));
             item.CountText.alignment = TextAlignmentOptions.TopRight;
             item.CountText.rectTransform.sizeDelta = new Vector2(80f, 30f);
 
-            TMP_Text newText = createText("new", root, "NEW", SmallFontSize, NewColor);
+            TMP_Text newText = UiFactory.CreateText("new", root, "NEW", SmallFontSize, NewColor);
             place(newText.rectTransform, new Vector2(0f, 1f), new Vector2(10f, -8f));
             newText.alignment = TextAlignmentOptions.TopLeft;
             newText.rectTransform.sizeDelta = new Vector2(80f, 30f);
             item.NewBadge = newText.gameObject;
 
-            TMP_Text equipped = createText("equipped", root, TextLocalizer.Get("PUG_EQUIPPED"), SmallFontSize, EquippedColor);
+            TMP_Text equipped = UiFactory.CreateText("equipped", root, TextLocalizer.Get("PUG_EQUIPPED"), SmallFontSize, EquippedColor);
             place(equipped.rectTransform, Vector2.one, new Vector2(-10f, -8f));
             equipped.alignment = TextAlignmentOptions.TopRight;
             equipped.rectTransform.sizeDelta = new Vector2(100f, 30f);
             item.EquippedBadge = equipped.gameObject;
 
-            TMP_Text owned = createText("owned", root, TextLocalizer.Get("PUG_OWNED"), PriceFontSize, TextBrown);
+            TMP_Text owned = UiFactory.CreateText("owned", root, TextLocalizer.Get("PUG_OWNED"), PriceFontSize, TextBrown);
             place(owned.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 24f));
             owned.rectTransform.sizeDelta = new Vector2(180f, 32f);
             item.OwnedLabel = owned.gameObject;
@@ -278,7 +285,7 @@ namespace mumu
             // とくべつな子は交換できない
             if (!_character.IsForSale)
             {
-                TMP_Text secret = createText("secret", root, TextLocalizer.Get("PUG_NOT_FOR_SALE"), SmallFontSize, NewColor);
+                TMP_Text secret = UiFactory.CreateText("secret", root, TextLocalizer.Get("PUG_NOT_FOR_SALE"), SmallFontSize, NewColor);
                 place(secret.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 24f));
                 secret.rectTransform.sizeDelta = new Vector2(180f, 30f);
                 item.SecretLabel = secret.gameObject;
@@ -286,14 +293,14 @@ namespace mumu
             }
 
             // 交換ボタン（ほねのアイコン＋値段）
-            Image buttonImage = createImage("price", root, ResourceManager.Instance.Load<Sprite>(ButtonPath), PriceButtonSize);
+            Image buttonImage = UiFactory.CreateImage("price", root, ResourceManager.Instance.Load<Sprite>(ButtonPath), PriceButtonSize);
             buttonImage.type = Image.Type.Sliced;
             buttonImage.preserveAspect = false;
             buttonImage.raycastTarget = true;
             place(buttonImage.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 12f));
-            Image bone = createImage("bone", buttonImage.transform, ResourceManager.Instance.Load<Sprite>(BonePath), new Vector2(40f, 24f));
+            Image bone = UiFactory.CreateImage("bone", buttonImage.transform, ResourceManager.Instance.Load<Sprite>(BonePath), new Vector2(40f, 24f));
             place(bone.rectTransform, new Vector2(0f, 0.5f), new Vector2(12f, 3f));
-            TMP_Text price = createText("label", buttonImage.transform, _character.Price.ToString(), PriceFontSize, TextBrown);
+            TMP_Text price = UiFactory.CreateText("label", buttonImage.transform, _character.Price.ToString(), PriceFontSize, TextBrown);
             stretch(price.rectTransform, 0f);
             price.rectTransform.offsetMin = new Vector2(48f, 0f);
             price.rectTransform.anchoredPosition += new Vector2(0f, 3f);
@@ -313,7 +320,29 @@ namespace mumu
         /// <param name="_characterId"></param>
         private void onClickPriceButton(int _characterId)
         {
-            confirmExchangeAsync(_characterId).Forget();
+            showActionAsync(_characterId).Forget();
+        }
+
+        /// <summary>
+        /// 2つの確認（交換・庭へ）を出す。持っているか、ほねが足りるか、庭が一杯かで押せるかを決める
+        /// </summary>
+        /// <param name="_characterId"></param>
+        private async UniTaskVoid showActionAsync(int _characterId)
+        {
+            CharacterData character = CharacterMaster.Get(_characterId);
+            if (character == null)
+            {
+                return;
+            }
+            bool isOwned = PugCollection.IsOwned(_characterId);
+            bool canExchange = character.IsForSale && !isOwned && SaveDataManager.Data.bones >= character.Price;
+            bool canGarden = isOwned && !PugCollection.IsInGarden(_characterId) && PugCollection.GardenIds.Count < UserSaveData.MaxGarden;
+
+            var param = new ConfirmParam(
+                character.Name,
+                TextLocalizer.Get("PUG_EXCHANGE"), canExchange, () => confirmExchangeAsync(_characterId).Forget(),
+                TextLocalizer.Get("PUG_TO_GARDEN"), canGarden, () => addToGarden(_characterId));
+            await PopupManager.Instance.Open(ePopup.Confirm, param, destroyCancellationToken);
         }
 
         /// <summary>
@@ -329,17 +358,17 @@ namespace mumu
             }
             CharacterSprites sprites = CharacterSprites.Load(character);
             Sprite[] sitFrames = sprites != null ? sprites.Sit : null;
-            Transform dialogParent = transform.parent;
+            PopupManager popupManager = PopupManager.Instance;
 
             isConfirming = true;
             if (SaveDataManager.Data.bones < character.Price)
             {
-                await MessageDialog.ShowTextAsync(dialogParent, TextLocalizer.Get("PUG_BUY_TITLE"), TextLocalizer.Get("PUG_BUY_SHORT", character.Price - SaveDataManager.Data.bones), false, sitFrames, destroyCancellationToken);
+                await popupManager.Open(ePopup.Alert, new AlertParam(TextLocalizer.Get("PUG_BUY_TITLE"), TextLocalizer.Get("PUG_BUY_SHORT", character.Price - SaveDataManager.Data.bones), false, sitFrames), destroyCancellationToken);
                 isConfirming = false;
                 return;
             }
 
-            bool isYes = await MessageDialog.ShowTextAsync(dialogParent, TextLocalizer.Get("PUG_BUY_TITLE"), TextLocalizer.Get("PUG_BUY_BODY", character.Name, character.Price), true, sitFrames, destroyCancellationToken);
+            bool isYes = await popupManager.Open(ePopup.Alert, new AlertParam(TextLocalizer.Get("PUG_BUY_TITLE"), TextLocalizer.Get("PUG_BUY_BODY", character.Name, character.Price), true, sitFrames), destroyCancellationToken);
             if (isYes && CharacterMaster.Exchange(_characterId))
             {
                 isExchanged = true;
@@ -349,61 +378,33 @@ namespace mumu
                 {
                     sound.PlaySe(eSe.Clear);
                 }
-                await MessageDialog.ShowTextAsync(dialogParent, TextLocalizer.Get("PUG_JOINED_TITLE"), TextLocalizer.Get("PUG_JOINED_BODY", character.Name), false, sprites != null ? sprites.Happy : null, destroyCancellationToken);
+                await popupManager.Open(ePopup.Alert, new AlertParam(TextLocalizer.Get("PUG_JOINED_TITLE"), TextLocalizer.Get("PUG_JOINED_BODY", character.Name), false, sprites != null ? sprites.Happy : null), destroyCancellationToken);
             }
             isConfirming = false;
         }
 
         /// <summary>
-        /// 閉じるボタン押下時の処理
+        /// 持っている子をおにわに入れる（入ったら、おにわを開き直せるよう変更を伝える）
+        /// </summary>
+        /// <param name="_characterId"></param>
+        private void addToGarden(int _characterId)
+        {
+            if (PugCollection.AddToGarden(_characterId))
+            {
+                isExchanged = true;
+                refresh();
+            }
+        }
+
+        /// <summary>
+        /// 閉じるボタン押下時の処理（交換した時は true で閉じる）
         /// </summary>
         private void onClickCloseButton()
         {
             if (!isConfirming)
             {
-                closeSource.TrySetResult();
+                close(isExchanged);
             }
-        }
-
-        /// <summary>
-        /// 画像を作る
-        /// </summary>
-        /// <param name="_name"></param>
-        /// <param name="_parent"></param>
-        /// <param name="_sprite"></param>
-        /// <param name="_size"></param>
-        private static Image createImage(string _name, Transform _parent, Sprite _sprite, Vector2 _size)
-        {
-            var go = new GameObject(_name, typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(_parent, false);
-            Image image = go.GetComponent<Image>();
-            image.sprite = _sprite;
-            image.preserveAspect = true;
-            image.raycastTarget = false;
-            image.rectTransform.sizeDelta = _size;
-            return image;
-        }
-
-        /// <summary>
-        /// 文字を作る
-        /// </summary>
-        /// <param name="_name"></param>
-        /// <param name="_parent"></param>
-        /// <param name="_text"></param>
-        /// <param name="_size"></param>
-        /// <param name="_color"></param>
-        private static TMP_Text createText(string _name, Transform _parent, string _text, float _size, Color _color)
-        {
-            var go = new GameObject(_name, typeof(RectTransform), typeof(TextMeshProUGUI));
-            go.transform.SetParent(_parent, false);
-            var text = go.GetComponent<TextMeshProUGUI>();
-            text.text = _text;
-            text.fontSize = _size;
-            text.color = _color;
-            text.alignment = TextAlignmentOptions.Center;
-            text.raycastTarget = false;
-            text.textWrappingMode = TextWrappingModes.NoWrap;
-            return text;
         }
 
         /// <summary>

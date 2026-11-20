@@ -17,6 +17,7 @@ namespace mumu
         private const string FontAssetPath = FontFolder + "/DotGothic16 TMP.asset";
         private const string TmpSettingsPath = "Assets/TextMesh Pro/Resources/TMP Settings.asset";
         private const string PrefabFolder = "Assets/mumu/Resources";
+        private const string StampKey = "FontSetup";
 
         /// <summary>サンプリングサイズ（フォントの設計サイズ 16px の倍数にしてドットを崩さない）</summary>
         private const int SamplingPointSize = 32;
@@ -36,10 +37,12 @@ namespace mumu
         /// </summary>
         private static void autoSetup()
         {
-            if (EditorApplication.isPlayingOrWillChangePlaymode || AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontAssetPath) != null)
+            bool isBuilt = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontAssetPath) != null;
+            if (EditorApplication.isPlayingOrWillChangePlaymode || !EditorBuildStamp.NeedsBuild(StampKey, isBuilt, new[] { FontAssetPath }))
             {
                 return;
             }
+            EditorBuildStamp.Save(StampKey);
             Setup();
         }
 
@@ -58,6 +61,7 @@ namespace mumu
             setDefaultFont(fontAsset);
             int count = applyToPrefabs(fontAsset);
             AssetDatabase.SaveAssets();
+            EditorBuildStamp.Save(StampKey);
             Debug.Log($"[FontSetup] DotGothic16 applied ({count} texts)");
         }
 

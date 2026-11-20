@@ -26,6 +26,7 @@ namespace mumu
         private const string SettingsPath = "Assets/mumu/Localization/TextSetting.asset";
         private const string LocaleFolder = "Assets/mumu/Localization/Locales";
         private const string TableFolder = "Assets/mumu/Localization/Tables";
+        private const string StampKey = "LocalizationSetup";
 
         /// <summary>対応言語（先頭が日本語）</summary>
         private static readonly string[] LocaleCodes = { "ja", "en" };
@@ -77,7 +78,33 @@ namespace mumu
             new[] { "PUG_DUPLICATE_TITLE", "もう なかまだよ！", "Already a friend!" },
             new[] { "PUG_DUPLICATE_BODY", "{0} は もう なかまだよ。\nかわりに ほね {1}こ もらったよ！", "{0} is already your friend.\nYou got {1} bones instead!" },
             new[] { "PUG_OWNED", "もってる", "Owned" },
-            new[] { "PUG_EQUIP", "つれていく", "Take along" },
+            new[] { "PUG_EQUIP", "一緒にいく", "Come along" },
+            new[] { "GARDEN_REST", "お休み", "Rest" },
+            new[] { "PUG_EXCHANGE", "交換", "Exchange" },
+            new[] { "PUG_TO_GARDEN", "庭へ", "To garden" },
+            new[] { "NOTICE_UNAVAILABLE", "いまは できないよ", "Not available right now" },
+            // TODO: 仮の文字（ミッションのボーナス表示。あとで差し替える）
+            new[] { "WANDERFUL_BONUS", "[仮] ワンだふるボーナス！ ほね +{0}", "[TODO] Woof-derful Bonus! Bones +{0}" },
+            new[] { "WANDERFUL_DETAIL", "[仮] もどらず パーフェクト クリア", "[TODO] No-return perfect clear" },
+            // TODO: テーマのおはなし（仮の文字。テーマ番号ごとに書き直す）
+            new[] { "THEME_STORY_1", "[仮] テーマ1の おはなし", "[TODO] Theme 1 story" },
+            new[] { "THEME_STORY_2", "[仮] テーマ2の おはなし", "[TODO] Theme 2 story" },
+            new[] { "THEME_STORY_3", "[仮] テーマ3の おはなし", "[TODO] Theme 3 story" },
+            new[] { "THEME_STORY_4", "[仮] テーマ4の おはなし", "[TODO] Theme 4 story" },
+            new[] { "THEME_STORY_5", "[仮] テーマ5の おはなし", "[TODO] Theme 5 story" },
+            new[] { "THEME_STORY_6", "[仮] テーマ6の おはなし", "[TODO] Theme 6 story" },
+            new[] { "THEME_STORY_7", "[仮] テーマ7の おはなし", "[TODO] Theme 7 story" },
+            new[] { "THEME_STORY_8", "[仮] テーマ8の おはなし", "[TODO] Theme 8 story" },
+            new[] { "THEME_STORY_9", "[仮] テーマ9の おはなし", "[TODO] Theme 9 story" },
+            new[] { "THEME_STORY_10", "[仮] テーマ10の おはなし", "[TODO] Theme 10 story" },
+            new[] { "THEME_STORY_11", "[仮] テーマ11の おはなし", "[TODO] Theme 11 story" },
+            new[] { "THEME_STORY_12", "[仮] テーマ12の おはなし", "[TODO] Theme 12 story" },
+            new[] { "THEME_STORY_13", "[仮] テーマ13の おはなし", "[TODO] Theme 13 story" },
+            new[] { "THEME_STORY_14", "[仮] テーマ14の おはなし", "[TODO] Theme 14 story" },
+            // TODO: ヒントの確認（仮の文字）
+            new[] { "HINT_CONFIRM", "[仮] ヒントを つかう？ ほね {0} を つかうよ", "[TODO] Use a hint? It costs {0} bones" },
+            new[] { "HINT_USE", "[仮] つかう", "[TODO] Use" },
+            new[] { "HINT_CANCEL", "[仮] やめる", "[TODO] Cancel" },
             new[] { "PUG_UNEQUIP", "はずす", "Leave home" },
             new[] { "PUG_EQUIPPED", "いっしょ", "With you" },
             new[] { "TOAST_GATE", "カギを とってから とおろう", "Get the key first to open this gate" },
@@ -98,10 +125,11 @@ namespace mumu
         /// </summary>
         private static void autoSetup()
         {
-            if (EditorApplication.isPlayingOrWillChangePlaymode || isReady())
+            if (EditorApplication.isPlayingOrWillChangePlaymode || !EditorBuildStamp.NeedsBuild(StampKey, isReady(), null))
             {
                 return;
             }
+            EditorBuildStamp.Save(StampKey);
             Setup();
         }
 
@@ -158,6 +186,7 @@ namespace mumu
             EditorUtility.SetDirty(collection.SharedData);
 
             AssetDatabase.SaveAssets();
+            EditorBuildStamp.Save(StampKey);
             Debug.Log($"[LocalizationSetup] Localization ready: table '{TableName}', locales {string.Join(", ", LocaleCodes)}");
         }
 

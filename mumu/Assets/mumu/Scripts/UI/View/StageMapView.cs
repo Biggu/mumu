@@ -125,7 +125,7 @@ namespace mumu
             ThemeSprites sprites = await ThemeSprites.LoadAsync(_themeId, destroyCancellationToken);
             if (sprites != null)
             {
-                UiImageUtility.SetTiled(bgImage, sprites.Background);
+                ThemeBackground.Show(bgImage, sprites);
                 AmbientParticles.Create(transform, bgImage != null ? bgImage.transform.GetSiblingIndex() + 1 : 0, _themeId);
             }
         }
@@ -160,12 +160,11 @@ namespace mumu
                 nodePositions.Add(new Vector2(x, y));
             }
 
-            // 道（肉球）→ ノード → パグの順に重ねる
-            Sprite paw = ResourceManager.Instance.Load<Sprite>(PawPath);
+            // 道（線）→ ノード → パグの順に重ねる
             for (int i = 1; i < nodePositions.Count; i++)
             {
                 bool isReached = first + i <= _current;
-                createTrail(paw, nodePositions[i - 1], nodePositions[i], isReached ? PawReachedColor : PawLockedColor);
+                createTrail(nodePositions[i - 1], nodePositions[i], isReached ? PawReachedColor : PawLockedColor);
             }
             for (int i = first; i <= last; i++)
             {
@@ -179,24 +178,33 @@ namespace mumu
         }
 
         /// <summary>
-        /// ノード間に肉球を並べる
+        /// ノード間を線でつなぐ（ノードの下に敷く。ノードが線の端を隠す）
         /// </summary>
-        /// <param name="_sprite"></param>
         /// <param name="_from"></param>
         /// <param name="_to"></param>
         /// <param name="_color"></param>
-        private void createTrail(Sprite _sprite, Vector2 _from, Vector2 _to, Color _color)
+        private void createTrail(Vector2 _from, Vector2 _to, Color _color)
         {
+            const float LineWidth = 10f;
             Vector2 diff = _to - _from;
             float length = diff.magnitude;
+            Image line = UiFactory.CreateImage("trail", pageRoot, null, new Vector2(length, LineWidth));
+            line.color = _color;
+            line.raycastTarget = false;
+            line.rectTransform.anchoredPosition = (_from + _to) * 0.5f;
+            line.rectTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg);
+
+            // 線の上に肉球を並べる（線の色と違う白にして見えるように）
+            Sprite paw = ResourceManager.Instance.Load<Sprite>(PawPath);
             int count = Mathf.FloorToInt((length - NodeSize) / PawSpacing);
             float angle = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg - 90f;
             for (int i = 1; i <= count; i++)
             {
                 float t = (NodeSize * 0.5f + i * PawSpacing) / length;
                 Vector2 side = new Vector2(-diff.y, diff.x).normalized * (i % 2 == 0 ? 5f : -5f);
-                Image image = createImage("paw", pageRoot, _sprite, new Vector2(PawSize, PawSize));
-                image.color = _color;
+                Image image = UiFactory.CreateImage("paw", pageRoot, paw, new Vector2(PawSize, PawSize));
+                image.color = Color.white;
+                image.raycastTarget = false;
                 image.rectTransform.anchoredPosition = Vector2.Lerp(_from, _to, t) + side;
                 image.rectTransform.localRotation = Quaternion.Euler(0f, 0f, angle);
             }
@@ -214,7 +222,7 @@ namespace mumu
             bool isCleared = _index < StageProgress.ClearedCount;
             bool isCurrent = _index == _current;
 
-            Image node = createImage($"stage{number}", pageRoot, ResourceManager.Instance.Load<Sprite>(NodeSpritePath), new Vector2(NodeSize, NodeSize));
+            Image node = UiFactory.CreateImage($"stage{number}", pageRoot, ResourceManager.Instance.Load<Sprite>(NodeSpritePath), new Vector2(NodeSize, NodeSize));
             node.color = isCurrent ? CurrentColor : (isCleared ? ClearedColor : LockedColor);
             node.rectTransform.anchoredPosition = _position;
 
@@ -232,14 +240,23 @@ namespace mumu
             if (isCleared)
             {
                 int stars = StageRecord.GetStars(number);
-                for (int s = 0; s < 3; s++)
+                if (stars == 3 && StageRecord.IsNoRewind(number))
                 {
-                    Image star = createImage("star", node.transform, ResourceManager.Instance.Load<Sprite>(s < stars ? StarOnPath : StarOffPath), new Vector2(SmallStarSize, SmallStarSize));
-                    star.rectTransform.anchoredPosition = new Vector2((s - 1) * SmallStarSize, -NodeSize * 0.5f - 6f);
+                    // 地図の上は動かさない絵（1コマ目）
+                    Image bigStar = UiFactory.CreateImage("bigStar", node.transform, RainbowStar.Still, SmallStarSize * 2f);
+                    bigStar.rectTransform.anchoredPosition = new Vector2(0f, -NodeSize * 0.5f - 6f);
+                }
+                else
+                {
+                    for (int s = 0; s < 3; s++)
+                    {
+                        Image star = UiFactory.CreateImage("star", node.transform, ResourceManager.Instance.Load<Sprite>(s < stars ? StarOnPath : StarOffPath), new Vector2(SmallStarSize, SmallStarSize));
+                        star.rectTransform.anchoredPosition = new Vector2((s - 1) * SmallStarSize, -NodeSize * 0.5f - 6f);
+                    }
                 }
                 if (StageRecord.IsPerfect(number))
                 {
-                    Image crown = createImage("crown", node.transform, ResourceManager.Instance.Load<Sprite>(CrownPath), new Vector2(SmallStarSize * 1.4f, SmallStarSize * 1.4f));
+                    Image crown = UiFactory.CreateImage("crown", node.transform, ResourceManager.Instance.Load<Sprite>(CrownPath), new Vector2(SmallStarSize * 1.4f, SmallStarSize * 1.4f));
                     crown.rectTransform.anchoredPosition = new Vector2(NodeSize * 0.4f, NodeSize * 0.4f);
                 }
             }
@@ -265,7 +282,14 @@ namespace mumu
                 pugSprites = pugSprites.WithBoy(equipped);
             }
 
-            Image image = createImage("pug", pageRoot, pugSprites.BoySit[0], new Vector2(PugSize, PugSize));
+            GameObject go = PartsLoaderManager.Instance.Create(ePart.StagePug, pageRoot);
+            if (go == null)
+            {
+                return;
+            }
+            Image image = go.GetComponent<Image>();
+            image.sprite = pugSprites.BoySit[0];
+            image.rectTransform.sizeDelta = new Vector2(PugSize, PugSize);
             pug = image.rectTransform;
             pug.pivot = new Vector2(0.5f, 0.08f);
             pug.anchoredPosition = _position + new Vector2(0f, PugOffsetY);
@@ -314,6 +338,7 @@ namespace mumu
                 }
             }
             pug.localScale = new Vector3(end.x < start.x ? -1f : 1f, 1f, 1f);
+            CommonUtility.PlaySe(eSe.Footstep);
             pugAnimation.Play(pugSprites.BoyRun, 12f);
 
             for (float time = 0f; time < WalkDuration; time += Time.unscaledDeltaTime)
@@ -345,6 +370,7 @@ namespace mumu
         /// </summary>
         private async UniTask<bool> slidePageAsync()
         {
+            CommonUtility.PlaySe(eSe.PageFlip);
             float height = nodeRoot.rect.height;
             for (float time = 0f; time < PageSlideDuration; time += Time.unscaledDeltaTime)
             {
@@ -357,27 +383,6 @@ namespace mumu
             }
             pageRoot.anchoredPosition = Vector2.zero;
             return false;
-        }
-
-        /// <summary>
-        /// 画像を作る（中央基準）
-        /// </summary>
-        /// <param name="_name"></param>
-        /// <param name="_parent"></param>
-        /// <param name="_sprite"></param>
-        /// <param name="_size"></param>
-        private static Image createImage(string _name, Transform _parent, Sprite _sprite, Vector2 _size)
-        {
-            var go = new GameObject(_name, typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(_parent, false);
-            var rect = (RectTransform)go.transform;
-            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = _size;
-            Image image = go.GetComponent<Image>();
-            image.sprite = _sprite;
-            image.preserveAspect = true;
-            image.raycastTarget = false;
-            return image;
         }
 
         /// <summary>

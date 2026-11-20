@@ -42,9 +42,59 @@ namespace mumu
             else
             {
                 data.pugs.Add(_characterId);
+                if (data.gardenPugs.Count < UserSaveData.MaxGarden)
+                {
+                    data.gardenPugs.Add(_characterId);
+                }
             }
             SaveDataManager.Save();
             return bones;
+        }
+
+        /// <summary>おにわにいる子（持っている子だけ）</summary>
+        public static IReadOnlyList<int> GardenIds => SaveDataManager.Data.gardenPugs;
+
+        /// <summary>おにわにいる子か</summary>
+        /// <param name="_characterId"></param>
+        public static bool IsInGarden(int _characterId)
+        {
+            return SaveDataManager.Data.gardenPugs.Contains(_characterId);
+        }
+
+        /// <summary>
+        /// おにわに入れる（持っていて、上限に空きがある時だけ）。入れたら true
+        /// </summary>
+        /// <param name="_characterId"></param>
+        public static bool AddToGarden(int _characterId)
+        {
+            UserSaveData data = SaveDataManager.Data;
+            if (!IsOwned(_characterId) || data.gardenPugs.Contains(_characterId) || data.gardenPugs.Count >= UserSaveData.MaxGarden)
+            {
+                return false;
+            }
+            data.gardenPugs.Add(_characterId);
+            SaveDataManager.Save();
+            return true;
+        }
+
+        /// <summary>
+        /// おにわから出す（1匹は残すので、最後の1匹は出せない）。出せたら true
+        /// </summary>
+        /// <param name="_characterId"></param>
+        public static bool RemoveFromGarden(int _characterId)
+        {
+            UserSaveData data = SaveDataManager.Data;
+            if (!data.gardenPugs.Contains(_characterId) || data.gardenPugs.Count <= 1)
+            {
+                return false;
+            }
+            data.gardenPugs.Remove(_characterId);
+            if (data.equippedPugId == _characterId)
+            {
+                data.equippedPugId = DefaultPlayerId;
+            }
+            SaveDataManager.Save();
+            return true;
         }
 
         /// <summary>

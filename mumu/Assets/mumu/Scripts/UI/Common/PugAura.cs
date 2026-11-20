@@ -102,10 +102,7 @@ namespace mumu
         /// </summary>
         private void spawn()
         {
-            if (sprite == null)
-            {
-                sprite = ResourceManager.Instance.Load<Sprite>(SpritePath);
-            }
+            SpriteUtility.LoadCached(ref sprite, SpritePath);
 
             var go = new GameObject("spark", typeof(RectTransform), typeof(Image));
             go.transform.SetParent(transform, false);

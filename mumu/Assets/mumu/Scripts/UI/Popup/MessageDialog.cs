@@ -1,4 +1,3 @@
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
@@ -9,7 +8,7 @@ namespace mumu
     /// <summary>
     /// メッセージダイアログ（OK のみ、または はい／いいえ）
     /// </summary>
-    public class MessageDialog : MonoBehaviour
+    public class MessageDialog : PopupBase
     {
         public const string PrefabName = "message_dialog";
 
@@ -37,75 +36,30 @@ namespace mumu
         /// <summary>背景の暗幕（はい／いいえの時は押すと いいえ）</summary>
         [SerializeField]
         private MumuButton dimButton = null;
+        /// <summary>閉じるボタン（右上。いいえ扱いで閉じる）</summary>
+        [SerializeField]
+        private MumuButton closeButton = null;
         /// <summary>アイコン（パグなど、なければ非表示）</summary>
         [SerializeField]
         private Image iconImage = null;
 
-        private UniTaskCompletionSource<bool> resultSource = null;
         private bool hasNo = false;
 
         /// <summary>
-        /// 表示して押されたボタンを待つ（はい・OK = true）
+        /// 初期化（AlertParam を受け取り、表示する）
         /// </summary>
-        /// <param name="_parent"></param>
-        /// <param name="_titleKey"></param>
-        /// <param name="_bodyKey"></param>
-        /// <param name="_hasNo"></param>
-        /// <param name="_token"></param>
-        public static UniTask<bool> ShowAsync(Transform _parent, string _titleKey, string _bodyKey, bool _hasNo, CancellationToken _token)
+        /// <param name="_param"></param>
+        public override void Setup(BaseParam _param)
         {
-            return ShowTextAsync(_parent, TextLocalizer.Get(_titleKey), TextLocalizer.Get(_bodyKey), _hasNo, null, _token);
-        }
+            var param = (AlertParam)_param;
+            hasNo = param.HasNo;
 
-        /// <summary>
-        /// 文字をそのまま表示して押されたボタンを待つ（_iconFrames はアイコンのコマ送り、null で非表示）
-        /// </summary>
-        /// <param name="_parent"></param>
-        /// <param name="_title"></param>
-        /// <param name="_body"></param>
-        /// <param name="_hasNo"></param>
-        /// <param name="_iconFrames"></param>
-        /// <param name="_token"></param>
-        /// <param name="_auraTier"></param>
-        public static async UniTask<bool> ShowTextAsync(Transform _parent, string _title, string _body, bool _hasNo, Sprite[] _iconFrames, CancellationToken _token, int _auraTier = 0)
-        {
-            MessageDialog dialog = await PopupLoader.InstantiateAsync<MessageDialog>(PrefabName, _parent, _token);
-            if (dialog == null)
-            {
-                return false;
-            }
-
-            dialog.setup(_title, _body, _hasNo);
-            dialog.setIcon(_iconFrames);
-            if (dialog.iconImage != null && dialog.iconImage.gameObject.activeSelf)
-            {
-                PugAura.Attach(dialog.iconImage.rectTransform, _auraTier, dialog.iconImage.rectTransform.sizeDelta.x);
-            }
-            (bool isCanceled, bool result) = await dialog.resultSource.Task.AttachExternalCancellation(_token).SuppressCancellationThrow();
-            if (dialog != null)
-            {
-                Destroy(dialog.gameObject);
-            }
-            return !isCanceled && result;
-        }
-
-        /// <summary>
-        /// 初期化
-        /// </summary>
-        /// <param name="_title"></param>
-        /// <param name="_body"></param>
-        /// <param name="_hasNo"></param>
-        private void setup(string _title, string _body, bool _hasNo)
-        {
-            hasNo = _hasNo;
-            resultSource = new UniTaskCompletionSource<bool>();
-
-            titleText.text = _title;
-            bodyText.text = _body;
-            yesButton.SetText(TextLocalizer.Get(_hasNo ? "YES" : "OK"));
+            titleText.text = param.Title;
+            bodyText.text = param.Body;
+            yesButton.SetText(TextLocalizer.Get(hasNo ? "YES" : "OK"));
             yesButton.SetOnClick(onClickYesButton);
-            noButton.gameObject.SetActive(_hasNo);
-            if (_hasNo)
+            noButton.gameObject.SetActive(hasNo);
+            if (hasNo)
             {
                 noButton.SetText(TextLocalizer.Get("NO"));
                 noButton.SetOnClick(onClickNoButton);
@@ -116,10 +70,20 @@ namespace mumu
                 var rect = (RectTransform)yesButton.transform;
                 rect.anchoredPosition = new Vector2(0f, rect.anchoredPosition.y);
             }
+            if (closeButton != null)
+            {
+                closeButton.SetOnClick(onClickCloseButton);
+            }
             if (dimButton != null)
             {
                 dimButton.SetClickSeEnabled(false);
                 dimButton.SetOnClick(onClickDimButton);
+            }
+
+            setIcon(param.IconFrames);
+            if (iconImage != null && iconImage.gameObject.activeSelf)
+            {
+                PugAura.Attach(iconImage.rectTransform, param.AuraTier, iconImage.rectTransform.sizeDelta.x);
             }
 
             UiTween.PunchScale(panel, Vector3.one, OpenPunchAmount, OpenPunchDuration, destroyCancellationToken).Forget();
@@ -138,12 +102,7 @@ namespace mumu
                 if (hasIcon)
                 {
                     iconImage.sprite = _frames[0];
-                    var frameAnimation = iconImage.GetComponent<SpriteFrameAnimation>();
-                    if (frameAnimation == null)
-                    {
-                        frameAnimation = iconImage.gameObject.AddComponent<SpriteFrameAnimation>();
-                    }
-                    frameAnimation.Play(_frames, IconFps);
+                    CommonUtility.GetOrAddComponent<SpriteFrameAnimation>(iconImage.gameObject).Play(_frames, IconFps);
                 }
             }
 
@@ -159,7 +118,7 @@ namespace mumu
         /// </summary>
         private void onClickYesButton()
         {
-            resultSource.TrySetResult(true);
+            close(true);
         }
 
         /// <summary>
@@ -167,7 +126,15 @@ namespace mumu
         /// </summary>
         private void onClickNoButton()
         {
-            resultSource.TrySetResult(false);
+            close(false);
+        }
+
+        /// <summary>
+        /// 閉じるボタン押下時の処理（いいえ扱い）
+        /// </summary>
+        private void onClickCloseButton()
+        {
+            close(false);
         }
 
         /// <summary>
@@ -177,7 +144,7 @@ namespace mumu
         {
             if (hasNo)
             {
-                resultSource.TrySetResult(false);
+                close(false);
             }
         }
     }

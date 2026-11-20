@@ -4,22 +4,74 @@ using UnityEngine;
 namespace mumu
 {
     /// <summary>
-    /// 効果音（Resources/Sound/SE/se_{6桁}、900001 以降はシステム音）
+    /// 効果音（Resources/Sound/SE/se_{6桁}）。番号どおりの名前は下の8つ、古い名前は同じ番号の別名
     /// </summary>
     public enum eSe
     {
-        /// <summary>se_000001: 経路を1マス進めた</summary>
-        Step = 1,
-        /// <summary>se_000002: 経路を巻き戻した</summary>
-        Undo = 2,
-        /// <summary>se_000003: チェックポイント通過・Goal 解放</summary>
-        Checkpoint = 3,
-        /// <summary>se_000004: 手数不足で Goal に入れなかった</summary>
-        Refused = 4,
-        /// <summary>se_000005: クリア</summary>
-        Clear = 5,
-        /// <summary>se_900001: ボタンを押した</summary>
-        ButtonClick = 900001,
+        /// <summary>se_000001: クリック（ボタン）</summary>
+        Click = 1,
+        /// <summary>se_000002: 吠える1（パグを押した時などに使う。今は未使用）</summary>
+        Bark1 = 2,
+        /// <summary>se_000003: 吠える2（進めない時）</summary>
+        Bark2 = 3,
+        /// <summary>se_000004: ブロックが増える（1マス進めた）</summary>
+        BlockGain = 4,
+        /// <summary>se_000005: ブロックが増える2（チェックポイント通過・Goal 解放）</summary>
+        BlockGain2 = 5,
+        /// <summary>se_000006: ブロックが減る（巻き戻した）</summary>
+        BlockMinus = 6,
+        /// <summary>se_000007: 勝利のジングル（クリア）</summary>
+        WinJingle = 7,
+        /// <summary>se_000008: 鳥が飛ぶ（今は未使用）</summary>
+        BirdFly = 8,
+        /// <summary>se_000009: カギを拾った</summary>
+        KeyGet = 9,
+        /// <summary>se_000010: 扉が開いた</summary>
+        GateOpen = 10,
+        /// <summary>se_000011: ほね（宝箱）が増えた</summary>
+        CoinGet = 11,
+        /// <summary>se_000012: こわれる橋が壊れた</summary>
+        CrackWood = 12,
+        /// <summary>se_000013: ワープに乗った</summary>
+        Warp = 13,
+        /// <summary>se_000014: 星が1つずつ点いた（クリア）</summary>
+        StarPing = 14,
+        /// <summary>se_000015: 大きな星になった（もどらずクリア）</summary>
+        Sparkle = 15,
+        /// <summary>se_000016: もどらずボーナス（ほね +10）</summary>
+        BonusCoin = 16,
+        /// <summary>se_000017: PERFECT の王冠</summary>
+        Fanfare = 17,
+        /// <summary>se_000018: テーマのおはなし</summary>
+        Chime = 18,
+        /// <summary>se_000019: 通知（真ん中のお知らせ）</summary>
+        NoticePing = 19,
+        /// <summary>se_000020: 画面下のトースト</summary>
+        ToastPop = 20,
+        /// <summary>se_000021: ダイアログが開く</summary>
+        PopupOpen = 21,
+        /// <summary>se_000022: ダイアログが閉じる</summary>
+        PopupClose = 22,
+        /// <summary>se_000023: ヒントを使った</summary>
+        HintChime = 23,
+        /// <summary>se_000024: パグが寝る（とても小さい）</summary>
+        SnoreSoft = 24,
+        /// <summary>se_000025: うれしい吠え（パグが仲間になった）</summary>
+        HappyBark = 25,
+        /// <summary>se_000026: ステージマップのページをめくる</summary>
+        PageFlip = 26,
+        /// <summary>se_000027: 男の子が歩く（足音）</summary>
+        Footstep = 27,
+        /// <summary>se_000028: 注意（今日のおさんぽが終わった）</summary>
+        AlertChime = 28,
+
+        // 既存の呼び出し名（同じ番号の別名）
+        Step = BlockGain,
+        Undo = BlockMinus,
+        Checkpoint = BlockGain2,
+        Refused = Bark2,
+        Clear = WinJingle,
+        ButtonClick = Click,
     }
 
     /// <summary>
@@ -29,8 +81,8 @@ namespace mumu
     {
         /// <summary>同時に鳴らせる数（ピッチ違いを重ねるため複数持つ）</summary>
         private const int SourceCount = 8;
-        /// <summary>タイトルの BGM（bgm_999）</summary>
-        public const int TitleBgmId = 999;
+        /// <summary>タイトルの BGM（bgm_000）</summary>
+        public const int TitleBgmId = 0;
         /// <summary>テーマの BGM がない時の BGM（bgm_000）</summary>
         public const int DefaultBgmId = 0;
 
@@ -38,7 +90,16 @@ namespace mumu
         /// <summary>BGM（見つからなかった ID は null を覚える）</summary>
         private readonly Dictionary<int, AudioClip> bgmClips = new Dictionary<int, AudioClip>();
         private AudioSource[] sources = null;
+        /// <summary>BGM の切り替えにかける時間（秒）</summary>
+        private const float BgmFadeSeconds = 1f;
+        /// <summary>今流れている BGM</summary>
         private AudioSource bgmSource = null;
+        /// <summary>もう一方の BGM（切り替えの時、ここから新しい曲を流す）</summary>
+        private AudioSource bgmOther = null;
+        /// <summary>フェードの経過時間（秒）。負なら切り替え中ではない</summary>
+        private float bgmFadeTime = -1f;
+        /// <summary>フェードアウトを始めた時の音量</summary>
+        private float bgmOutStartVolume = 1f;
         private int nextSource = 0;
 
         /// <summary>
@@ -71,10 +132,20 @@ namespace mumu
                 sources[i].playOnAwake = false;
             }
 
-            bgmSource = gameObject.AddComponent<AudioSource>();
-            bgmSource.playOnAwake = false;
-            bgmSource.loop = true;
+            bgmSource = createBgmSource();
+            bgmOther = createBgmSource();
             ApplySettings();
+        }
+
+        /// <summary>
+        /// BGM 用の AudioSource を生成（ループ・自動再生なし）
+        /// </summary>
+        private AudioSource createBgmSource()
+        {
+            AudioSource source = gameObject.AddComponent<AudioSource>();
+            source.playOnAwake = false;
+            source.loop = true;
+            return source;
         }
 
         /// <summary>
@@ -82,9 +153,14 @@ namespace mumu
         /// </summary>
         public void ApplySettings()
         {
+            bool mute = !GameSettings.IsBgmEnabled;
             if (bgmSource != null)
             {
-                bgmSource.mute = !GameSettings.IsBgmEnabled;
+                bgmSource.mute = mute;
+            }
+            if (bgmOther != null)
+            {
+                bgmOther.mute = mute;
             }
         }
 
@@ -106,7 +182,7 @@ namespace mumu
         }
 
         /// <summary>
-        /// BGM をループ再生（なければ bgm_000、同じ曲が流れていればそのまま）
+        /// BGM をループ再生（なければ bgm_000、同じ曲が流れていればそのまま。切り替えはフェード）
         /// </summary>
         /// <param name="_id"></param>
         public void PlayBgm(int _id)
@@ -116,13 +192,42 @@ namespace mumu
             {
                 clip = getBgmClip(DefaultBgmId);
             }
-            if (clip == null || bgmSource == null || (bgmSource.clip == clip && bgmSource.isPlaying))
+            if (clip == null || bgmSource == null || bgmOther == null || (bgmSource.clip == clip && bgmSource.isPlaying))
             {
                 return;
             }
 
+            // 今の BGM はフェードアウト、もう一方の AudioSource で新しい BGM をフェードイン
+            bgmOther.Stop();
+            AudioSource outgoing = bgmSource;
+            bgmOutStartVolume = outgoing.volume;
+            bgmSource = bgmOther;
+            bgmOther = outgoing;
             bgmSource.clip = clip;
+            bgmSource.volume = 0f;
             bgmSource.Play();
+            bgmFadeTime = 0f;
+        }
+
+        /// <summary>
+        /// BGM の切り替えのフェード（新しい曲を大きく、前の曲を小さく）
+        /// </summary>
+        private void Update()
+        {
+            if (bgmFadeTime < 0f)
+            {
+                return;
+            }
+
+            bgmFadeTime += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(bgmFadeTime / BgmFadeSeconds);
+            bgmSource.volume = t;
+            bgmOther.volume = bgmOutStartVolume * (1f - t);
+            if (t >= 1f)
+            {
+                bgmOther.Stop();
+                bgmFadeTime = -1f;
+            }
         }
 
         /// <summary>

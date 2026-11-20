@@ -70,6 +70,7 @@ namespace mumu
             if (sound != null)
             {
                 sound.PlayTitleBgm();
+                CommonUtility.PlaySe(eSe.BirdFly);
             }
 
             await setupStageAsync();
@@ -87,45 +88,6 @@ namespace mumu
             }
         }
 
-#if UNITY_EDITOR
-        /// <summary>B で増やすほねの数</summary>
-        private const int DebugBones = 999999;
-
-        /// <summary>
-        /// デバッグ操作（V: パグを全部仲間に、B: ほねを増やす）
-        /// </summary>
-        private void Update()
-        {
-            if (isPopupOpen || ViewManager.Instance.IsTransitioning)
-            {
-                return;
-            }
-
-            if (Input.GetKeyDown(KeyCode.V))
-            {
-                UserSaveData data = SaveDataManager.Data;
-                int added = 0;
-                foreach (CharacterData character in CharacterMaster.All)
-                {
-                    if (!data.pugs.Contains(character.Id))
-                    {
-                        data.pugs.Add(character.Id);
-                        added++;
-                    }
-                }
-                SaveDataManager.Save();
-                Debug.Log($"[TitleView] Debug: added {added} pugs (total {data.pugs.Count})");
-            }
-
-            if (Input.GetKeyDown(KeyCode.B))
-            {
-                UserSaveData data = SaveDataManager.Data;
-                data.bones = (int)System.Math.Min((long)data.bones + DebugBones, int.MaxValue);
-                SaveDataManager.Save();
-                Debug.Log($"[TitleView] Debug: bones {data.bones}");
-            }
-        }
-#endif
 
         /// <summary>
         /// 背景にランダムなステージを表示（操作不可）
@@ -145,7 +107,7 @@ namespace mumu
             }
 
             map.ShowDemoPath(DemoPathRate);
-            UiImageUtility.SetTiled(bgImage, map.Sprites.Background);
+            ThemeBackground.Show(bgImage, map.Sprites);
             fitStage(map.GetContentBounds());
             AmbientParticles.Create(mapGroup.parent, mapGroup.GetSiblingIndex() + 1, stageData.themeId);
             AmbientCritters.Create(mapGroup.parent, mapGroup.GetSiblingIndex() + 2, stageData.themeId);
@@ -184,7 +146,7 @@ namespace mumu
             if (StageProgress.IsAllCleared())
             {
                 isPopupOpen = true;
-                await MessageDialog.ShowAsync(transform, "ALL_CLEAR_TITLE", "ALL_CLEAR_BODY", false, destroyCancellationToken);
+                await PopupManager.Instance.Open(ePopup.Alert, new AlertParam(TextLocalizer.Get("ALL_CLEAR_TITLE"), TextLocalizer.Get("ALL_CLEAR_BODY"), false), destroyCancellationToken);
                 isPopupOpen = false;
                 if (destroyCancellationToken.IsCancellationRequested)
                 {
@@ -218,7 +180,8 @@ namespace mumu
             if (GameSession.DailyStrollRemaining == 0)
             {
                 isPopupOpen = true;
-                await MessageDialog.ShowAsync(transform, "DAILY_DONE_TITLE", "DAILY_DONE_BODY", false, destroyCancellationToken);
+                CommonUtility.PlaySe(eSe.AlertChime);
+                await PopupManager.Instance.Open(ePopup.Alert, new AlertParam(TextLocalizer.Get("DAILY_DONE_TITLE"), TextLocalizer.Get("DAILY_DONE_BODY"), false), destroyCancellationToken);
                 isPopupOpen = false;
                 if (destroyCancellationToken.IsCancellationRequested)
                 {
@@ -260,7 +223,7 @@ namespace mumu
                 return;
             }
             isPopupOpen = true;
-            await SettingsPopup.OpenAsync(transform, null, null, destroyCancellationToken);
+            await PopupManager.Instance.Open(ePopup.Settings, new SettingsParam(null, null), destroyCancellationToken);
             isPopupOpen = false;
         }
     }

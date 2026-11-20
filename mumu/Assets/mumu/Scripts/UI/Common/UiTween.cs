@@ -67,13 +67,14 @@ namespace mumu
         /// 横に揺らす（Y は Animator が書き込むため触らない）
         /// </summary>
         /// <param name="_target"></param>
+        /// <param name="_baseX"></param>
         /// <param name="_amplitude"></param>
         /// <param name="_duration"></param>
         /// <param name="_token"></param>
-        public static async UniTask ShakeX(RectTransform _target, float _amplitude, float _duration, CancellationToken _token)
+        public static async UniTask ShakeX(RectTransform _target, float _baseX, float _amplitude, float _duration, CancellationToken _token)
         {
             const float Cycles = 3f;
-            float baseX = _target.anchoredPosition.x;
+            float baseX = _baseX;
             float time = 0f;
 
             while (time < _duration && _target != null)

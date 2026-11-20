@@ -29,7 +29,7 @@ tools/
 | `run_theme_gen.ps1` | 14 テーマのブロック・デコ・水・橋・背景 → `Sprites/Themes/theme_XXXXXX`。テーマの中身は `art/ThemeGen.cs` の `ThemeGen.All()` |
 | `run_mapgen.ps1` | 冒険マップ 1〜50 を作り直す（上書き。`-Backup` 推奨）。設定は `mapgen/Program.cs` |
 | `run_gentest.ps1` | MapGenerator を 570 マップで確認（ギミックありも）。`invalid maps: 0/570`・`gimmick maps invalid: 0/570`・`play check fail: 0`（PuzzlePath で設計の経路をたどってクリアできるか）・`rule tests failed: 0`（扉・こわれる橋・ワープの決まりを小さいマップで確認）・`plain maps treasure wrong: 0`（ギミックなしでも宝箱が1つ）・`wrongly allowed: 0`（やじるしを横から出られないか）が出れば OK |
-| `verify_build.ps1` | Assets/mumu/Scripts の全 .cs をコンパイル。何も出なければ 0 エラー |
+| `verify_build.ps1` | プロジェクト（既定 `E:\testmodel\dev\mumu`、`-Project` で変更）の Assets/mumu/Scripts の全 .cs をコンパイル。プロジェクト直下の `Assembly-CSharp*.csproj` から `verify` 用の csproj を毎回作り直す。`0 エラー` と出れば OK |
 | `SpriteMeta.ps1` | .meta を書く共通関数（`Write-SheetMeta` / `Write-SingleMeta` / `Write-FolderMeta`） |
 
 ## art/（画像ジェネレーター）
@@ -54,7 +54,8 @@ tools/
 
 ## mapgen / gentest
 
-- どちらも MapGenerator.cs などのゲーム側のソースを直接コンパイルする（`*.csproj` の `Compile Include`）。Unity の型は `Stubs.cs` の最小限の代用品。
+- どちらも MapGenerator などのゲーム側のソースを直接コンパイルする（`*.csproj` の `Compile Include`）。MapGenerator は partial で `Data\MapGenerator*.cs` と `Data\GimmickCounts.cs` の全部を入れる。Unity の型は `Stubs.cs` の最小限の代用品。
+- ※ この instruction フォルダには mapgen / gentest の `.csproj` がないため、今は `dotnet run` で実行できない（`verify` のビルドは通る）。
 - ゲーム側でファイルを移動したら csproj のパスも直す。
 - mapgen の決まり（`Program.cs`）: テスト用 21 ステージ。`Plans` にテーマごとの設定（テーマ ID・名前・新しいギミック・ふつう/むずかしいの難易度・チュートリアル名）。
   - ステージ1（手で作った一本道、宝箱なし）はそのまま使い、2 以降は消して作り直す
@@ -64,5 +65,6 @@ tools/
 
 ## verify
 
-- Unity が作った csproj の写しに、Unity.Localization の参照を足したもの。Unity のインストール先（`C:\Program Files\Unity\Hub\Editor\6000.0.58f2`）と、プロジェクトの `Library\ScriptAssemblies` を参照している。
-- Unity でパッケージを追加した時など、参照が足りなくてエラーになったら、プロジェクト直下の `Assembly-CSharp*.csproj`（Unity が作る）をコピーし直して、Compile 以外の差分を確認する。
+- `verify_build.ps1` の実行のたびに、プロジェクト直下の `Assembly-CSharp.csproj` / `Assembly-CSharp-Editor.csproj`（Unity が作る）を読んで、`verify` の csproj に書き出す。書き出す時に `Assets\`・`Library\`・`ProjectReference` の相対パスをプロジェクトの絶対パスに直す（Compile 一覧は今の .cs ファイルに置き換える）。
+- verify の csproj はスクリプトが作るので直接編集しない。Unity でパッケージを追加して参照が足りなくなったら、Unity にプロジェクトの csproj を作り直させる（Unity 側の参照を直す）。
+- Unity が書き出す csproj の場所が変わったら、`verify_build.ps1` の `-Project` を指定する。

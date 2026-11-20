@@ -45,12 +45,38 @@ namespace mumu
         /// <summary>操作できるか</summary>
         private bool canInteract => IsActive() && IsInteractable();
 
+        /// <summary>使えない時に出すお知らせ（ローカライズのキー）</summary>
+        public const string DisabledNoticeKey = "NOTICE_UNAVAILABLE";
+        /// <summary>使えないボタンの色（明るいグレー）</summary>
+        private static readonly Color DisabledGray = new Color(0.78f, 0.78f, 0.78f, 1f);
+
+        /// <summary>
+        /// 状態に合わせて見た目を変える（使えない時は明るいグレー）
+        /// </summary>
+        /// <param name="_state"></param>
+        /// <param name="_instant"></param>
+        protected override void DoStateTransition(SelectionState _state, bool _instant)
+        {
+            base.DoStateTransition(_state, _instant);
+            if (!IsInteractable() && targetGraphic != null)
+            {
+                targetGraphic.color = DisabledGray;
+            }
+        }
+
         /// <summary>
         /// 押下
         /// </summary>
         /// <param name="_eventData"></param>
         public override void OnPointerDown(PointerEventData _eventData)
         {
+            // 使えないボタンは押した時に押す演出なしでお知らせだけ出す
+            if (_eventData.button == PointerEventData.InputButton.Left && IsActive() && !IsInteractable())
+            {
+                PopupManager.Instance.Notify(TextLocalizer.Get(DisabledNoticeKey));
+                return;
+            }
+
             base.OnPointerDown(_eventData);
 
             if (_eventData.button != PointerEventData.InputButton.Left || !canInteract)
@@ -263,14 +289,7 @@ namespace mumu
         /// </summary>
         private void cancelLongPress()
         {
-            if (longPressCts == null)
-            {
-                return;
-            }
-
-            longPressCts.Cancel();
-            longPressCts.Dispose();
-            longPressCts = null;
+            TokenUtility.Cancel(ref longPressCts);
         }
 
         /// <summary>

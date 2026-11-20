@@ -16,6 +16,7 @@ namespace mumu
         private const string ControllerPath = Folder + "/Block.controller";
         private const string PrefabPath = "Assets/mumu/Resources/Prefabs/InGame/block.prefab";
         private const string PropertyName = "m_AnchoredPosition.y";
+        private const string StampKey = "BlockAnimatorBuilder";
 
         /// <summary>持ち上げ時に行き過ぎる量</summary>
         private const float Overshoot = 3f;
@@ -39,10 +40,16 @@ namespace mumu
         /// </summary>
         private static void autoBuild()
         {
-            if (EditorApplication.isPlayingOrWillChangePlaymode || isPrefabReady())
+            bool hasPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null;
+            if (EditorApplication.isPlayingOrWillChangePlaymode || !hasPrefab)
             {
                 return;
             }
+            if (!EditorBuildStamp.NeedsBuild(StampKey, isPrefabReady(), new[] { ControllerPath }))
+            {
+                return;
+            }
+            EditorBuildStamp.Save(StampKey);
             Build();
         }
 
@@ -55,6 +62,7 @@ namespace mumu
             AnimatorController controller = loadOrCreateController();
             setupPrefab(controller);
             AssetDatabase.SaveAssets();
+            EditorBuildStamp.Save(StampKey);
             Debug.Log($"[BlockAnimatorBuilder] Animator set to {PrefabPath}");
         }
 
@@ -86,7 +94,7 @@ namespace mumu
 
             EditorAssetUtility.EnsureFolder(Folder);
 
-            float up = Block.RaiseHeight;
+            float up = MapLayout.RaiseHeight;
             AnimationClip down = loadOrCreateClip(Block.StateDown, new Keyframe(0f, 0f));
             AnimationClip raised = loadOrCreateClip(Block.StateUp, new Keyframe(0f, up));
             AnimationClip popUp = loadOrCreateClip(Block.StatePopUp,

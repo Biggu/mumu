@@ -34,7 +34,7 @@ namespace mumu
                 return null;
             }
 
-            Sprite[] frames = PugSprites.Filter(ResourceManager.Instance.LoadAll<Sprite>(SheetPath), $"critter_{critter.ToString().ToLowerInvariant()}_");
+            Sprite[] frames = SpriteUtility.FilterByPrefix(ResourceManager.Instance.LoadAll<Sprite>(SheetPath), $"critter_{critter.ToString().ToLowerInvariant()}_");
             if (frames.Length == 0)
             {
                 return null;

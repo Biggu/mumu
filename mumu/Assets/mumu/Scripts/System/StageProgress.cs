@@ -34,6 +34,35 @@ namespace mumu
         public static int CurrentNumber => CurrentIndex + 1;
 
         /// <summary>
+        /// 今のステージのテーマ番号
+        /// </summary>
+        public static int GetCurrentThemeId()
+        {
+            List<MapInfo> list = MapCsv.LoadList();
+            if (list.Count == 0)
+            {
+                return ThemeDefine.DefaultThemeId;
+            }
+            normalize(list.Count);
+            return list[CurrentIndex].ThemeId;
+        }
+
+        /// <summary>
+        /// 今のステージが、そのテーマの最後のステージか（次が別のテーマ、または最後のステージ）
+        /// </summary>
+        public static bool IsLastOfCurrentTheme()
+        {
+            List<MapInfo> list = MapCsv.LoadList();
+            if (list.Count == 0)
+            {
+                return false;
+            }
+            normalize(list.Count);
+            int next = CurrentIndex + 1;
+            return next >= list.Count || list[next].ThemeId != list[CurrentIndex].ThemeId;
+        }
+
+        /// <summary>
         /// 今あるステージをすべてクリアしたか
         /// </summary>
         public static bool IsAllCleared()
@@ -54,7 +83,34 @@ namespace mumu
             }
 
             normalize(list.Count);
-            return MapCsv.LoadMap(list[CurrentIndex]);
+            MapData map = MapCsv.LoadMap(list[CurrentIndex]);
+            // クリアしたステージは宝箱が無くなる（そこは普通の道になる。ほねはもう増えない）
+            if (map != null && StageRecord.IsCleared(CurrentNumber))
+            {
+                removeTreasures(map);
+            }
+            return map;
+        }
+
+        /// <summary>
+        /// 宝箱を全部取り除く（マスは通れる道のまま）
+        /// </summary>
+        /// <param name="_map"></param>
+        private static void removeTreasures(MapData _map)
+        {
+            for (int y = 0; y < _map.height; y++)
+            {
+                for (int x = 0; x < _map.width; x++)
+                {
+                    foreach (eBlockSubType subType in new List<eBlockSubType>(_map.GetBlockSubTypes(x, y)))
+                    {
+                        if (subType == eBlockSubType.Treasure1 || subType == eBlockSubType.Treasure2 || subType == eBlockSubType.Treasure3)
+                        {
+                            _map.RemoveBlockSubType(x, y, subType);
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>

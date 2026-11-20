@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa5f7268782bcbe47928a83262f0b1d7, type: 3}
+  m_Name: MapInputSettings
+  m_EditorClassIdentifier: 
+  DragDelayPerBlock: 0.2
+  NoDragRange: 2
+  DragStepRate: 0.5
+  FitRateX: 0.85
+  FitRateY: 0.75
+  MinZoomRate: 0.6
+  MaxZoomRate: 2.5
+  MaxScaleAbsolute: 7
+  PanLimitRate: 0.8
+  FocusDuration: 0.35
+  ScrollZoomStep: 1.1
+  MaxScrollDelta: 3
+  TapMoveThreshold: 20
+  TapMaxDuration: 0.3
+  DoubleTapInterval: 0.35
+  DoubleTapDistance: 80

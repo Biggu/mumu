@@ -1,0 +1,310 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using mumu;
+using UnityEngine;
+
+// 冒険のテスト用ステージ（50）を作る。
+// ・テーマは 10 ステージごとに変わる（1〜10 = テーマ1 そうげん、11〜20 = テーマ2 なつ、…、41〜50 = テーマ5 はる）
+// ・難易度は 10 ステージごとに 1 上がる（1〜10 = レベル1、11〜20 = レベル2、…、41〜50 = レベル5）
+// ・ステージ1は手で作ったもの（ギミックなし）。11・21・31・41 で新しいギミックが出る（一本道のチュートリアル）
+// ・それ以外のステージは、それまでに覚えたギミックから、ランダムに使う（ひとつも使わない時もある）
+// 前の 21 ステージ版は Program_21stages.cs.txt（参考用）。
+// 使い方: dotnet run -c Release -- <Assets/mumu/Resources/MapData のパス>
+public static class Program
+{
+    const int StageCount = 50;
+    const int StagesPerTheme = 10;
+    const int StagesPerLevel = 10;
+
+    /// テーマ1〜5 の名前（テーマ ID = 番号）
+    static readonly string[] ThemeNames = { "そうげん", "なつ", "ふゆ", "あき", "はる" };
+    /// 新しいギミック（ステージ 11・21・31・41 の順）とチュートリアル名
+    static readonly string[] NewGimmicks = { "arrow", "turn", "straight", "key" };
+    static readonly string[] TutorialNames = { "やじるしを おぼえよう", "まがりかどを おぼえよう", "まっすぐを おぼえよう", "カギと とびら" };
+    const string FirstName = "はじめの いっぽ";
+
+    static readonly HashSet<int> WaterThemes = new HashSet<int> { 2 };
+    static readonly eMapPattern[] LandPatterns = { eMapPattern.Square, eMapPattern.WideRect, eMapPattern.TallRect, eMapPattern.Circle, eMapPattern.Oval, eMapPattern.Hexagon, eMapPattern.Diamond, eMapPattern.Cross, eMapPattern.Donut, eMapPattern.LShape, eMapPattern.UShape, eMapPattern.River, eMapPattern.Lake };
+    static readonly eMapPattern[] WaterPatterns = { eMapPattern.River, eMapPattern.Lake, eMapPattern.Coast, eMapPattern.Ponds, eMapPattern.Circle, eMapPattern.Donut };
+
+    /// 盤面に対して経路が少なすぎる形は選び直す
+    const double MinFillRate = 0.3;
+    const int SeedAttempts = 60;
+    const int PatternTries = 30;
+
+    public static void Main(string[] args)
+    {
+        string folder = args[0];
+        string mapsFolder = Path.Combine(folder, "maps");
+        string listPath = Path.Combine(folder, "map_list.csv");
+        List<MapInfo> existing = MapCsv.ParseList(File.ReadAllText(listPath));
+        MapInfo first = existing.Find(_i => _i.Id == 1);
+        if (first == null || !File.Exists(Path.Combine(mapsFolder, "map_000001.csv")))
+        {
+            Console.WriteLine("map_000001.csv (hand-made stage 1) is missing");
+            return;
+        }
+
+        // 古いステージ（2 以降）を消す（.meta も）
+        foreach (string file in Directory.GetFiles(mapsFolder, "map_*.csv*"))
+        {
+            if (!Path.GetFileName(file).StartsWith("map_000001.csv", StringComparison.Ordinal))
+            {
+                File.Delete(file);
+            }
+        }
+
+        var list = new List<MapInfo>();
+        var picker = new System.Random(20261120);
+        var unlocked = new List<string>();
+        eMapPattern previous = (eMapPattern)(-1);
+
+        for (int stage = 1; stage <= StageCount; stage++)
+        {
+            int themeId = (stage - 1) / StagesPerTheme + 1;
+            int difficulty = (stage - 1) / StagesPerLevel + 1;
+
+            // ステージ1: 手で作ったもの（ギミックなし）
+            if (stage == 1)
+            {
+                first.Name = FirstName;
+                first.ThemeId = themeId;
+                first.Difficulty = difficulty;
+                list.Add(first);
+                Console.WriteLine($"{stage,2} tutorial (hand-made stage 1 kept)");
+                continue;
+            }
+
+            // 11・21・31・41: 新しいギミックの一本道チュートリアル
+            if (stage % StagesPerLevel == 1)
+            {
+                int index = stage / StagesPerLevel - 1;
+                string gimmick = NewGimmicks[index];
+                unlocked.Add(gimmick);
+                save(folder, buildTutorial(gimmick), stage, TutorialNames[index], themeId, difficulty, list, "tutorial");
+                continue;
+            }
+
+            // それ以外: 覚えたギミックからランダムに使う（ひとつも使わない時もある）
+            GimmickSettings settings = pickSettings(unlocked, picker);
+            MapData best = null;
+            for (int tries = 0; best == null && tries < PatternTries; tries++)
+            {
+                eMapPattern pattern;
+                do { pattern = pickPattern(themeId, picker); } while (pattern == previous && LandPatterns.Length > 1);
+                for (int attempt = 0; attempt < SeedAttempts; attempt++)
+                {
+                    var map = new MapData();
+                    int seed = stage * 100000 + tries * 1000 + attempt;
+                    var result = MapGenerator.Generate(map, difficulty, pattern, seed, false, settings);
+                    if (!result.IsSuccess || result.Waypoints < MinFillRate * result.Width * result.Height || !hasAnyGimmick(map, unlocked))
+                    {
+                        continue;
+                    }
+                    best = map;
+                    previous = pattern;
+                    break;
+                }
+            }
+            if (best == null)
+            {
+                Console.WriteLine($"{stage,2} FAILED to generate");
+                continue;
+            }
+            save(folder, best, stage, $"{ThemeNames[themeId - 1]} {stage}", themeId, difficulty, list, "normal");
+        }
+
+        File.WriteAllText(listPath, MapCsv.WriteList(list), MapCsv.FileEncoding);
+        playCheck(folder, list);
+        Console.WriteLine($"done: {list.Count} stages");
+    }
+
+    /// 書き出したマップを読み直して、設計の経路をたどるとゴールまでクリアできるか（ゲームと同じ PuzzlePath で確認）
+    static void playCheck(string _folder, List<MapInfo> _list)
+    {
+        int fail = 0;
+        foreach (MapInfo info in _list)
+        {
+            string text = File.ReadAllText(Path.Combine(_folder, "maps", $"map_{info.Id:000000}.csv"));
+            MapData map = MapCsv.ParseMap(info, text);
+            var path = new PuzzlePath(map);
+            Vector2Int[] waypoints = map.GetWaypointPositions(out _);
+            bool ok = true;
+            foreach (Vector2Int w in waypoints)
+            {
+                if (w == path.Head)
+                {
+                    continue;
+                }
+                if (path.MoveTo(w) != eMoveResult.Added)
+                {
+                    ok = false;
+                    break;
+                }
+            }
+            map.TryFindBlock(eBlockType.Goal, out Vector2Int goal);
+            if (!ok || path.MoveTo(goal) != eMoveResult.Cleared)
+            {
+                fail++;
+                Console.WriteLine($"play check FAIL: stage {info.Id}");
+            }
+        }
+        Console.WriteLine($"play check: {fail} fail / {_list.Count} stages");
+    }
+
+    /// テーマに合う形をひとつ選ぶ
+    static eMapPattern pickPattern(int _themeId, System.Random _picker)
+    {
+        eMapPattern[] pool = WaterThemes.Contains(_themeId) ? WaterPatterns : LandPatterns;
+        return pool[_picker.Next(pool.Length)];
+    }
+
+    /// 覚えたギミックから、ランダムに使うものを選ぶ（覚えたものがあれば、少なくとも1つは選ぶ）
+    static GimmickSettings pickSettings(List<string> _unlocked, System.Random _picker)
+    {
+        var settings = new GimmickSettings();
+        if (_unlocked.Count == 0)
+        {
+            return settings;
+        }
+        var chosen = new List<string>();
+        foreach (string gimmick in _unlocked)
+        {
+            if (_picker.Next(2) == 1)
+            {
+                chosen.Add(gimmick);
+            }
+        }
+        if (chosen.Count == 0)
+        {
+            chosen.Add(_unlocked[_picker.Next(_unlocked.Count)]);
+        }
+        foreach (string gimmick in chosen)
+        {
+            learnGimmick(ref settings, gimmick);
+        }
+        return settings;
+    }
+
+    /// 覚えたギミックを足す
+    static void learnGimmick(ref GimmickSettings _settings, string _gimmick)
+    {
+        switch (_gimmick)
+        {
+            case "arrow": _settings.Arrow = true; break;
+            case "turn": _settings.Turn = true; break;
+            case "straight": _settings.Straight = true; break;
+            case "key": _settings.Key = true; break;
+            case "warp": _settings.Warp = true; break;
+            case "crumble": _settings.Crumble = true; break;
+        }
+    }
+
+    /// 覚えたギミックのどれかが、マップに入っているか（覚えたものがなければ true）
+    static bool hasAnyGimmick(MapData _map, List<string> _unlocked)
+    {
+        if (_unlocked.Count == 0)
+        {
+            return true;
+        }
+        foreach (string gimmick in _unlocked)
+        {
+            if (hasGimmick(_map, gimmick))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// マップに指定のギミックが入っているか
+    static bool hasGimmick(MapData _map, string _gimmick)
+    {
+        int Count(params eBlockSubType[] _types) { int n = 0; foreach (var t in _types) n += _map.CountSubType(t); return n; }
+        switch (_gimmick)
+        {
+            case "arrow": return Count(GimmickUtility.Arrows) > 0;
+            case "turn": return Count(eBlockSubType.Turn) > 0;
+            case "straight": return Count(eBlockSubType.Straight) > 0;
+            case "key": return Count(GimmickUtility.Gates) > 0;
+            case "warp": return Count(GimmickUtility.WarpIns) > 0;
+            case "crumble": return Count(eBlockSubType.Crumble) > 0;
+            default: return true;
+        }
+    }
+
+    /// 検証して書き出す（CSV に書いて読み直しても有効か）
+    static void save(string _folder, MapData _map, int _id, string _name, int _themeId, int _difficulty, List<MapInfo> _list, string _kind)
+    {
+        _map.id = _id;
+        _map.mapName = _name;
+        _map.themeId = _themeId;
+        _map.difficulty = _difficulty;
+        bool ok = _map.ValidatePath(out string error);
+        MapInfo info = MapCsv.ToInfo(_map);
+        string text = MapCsv.WriteMap(_map);
+        ok &= MapCsv.ParseMap(info, text).ValidatePath(out string checkError);
+        File.WriteAllText(Path.Combine(_folder, "maps", $"map_{_id:000000}.csv"), text, MapCsv.FileEncoding);
+        _list.Add(info);
+
+        var counts = new List<string>();
+        for (int y = 0; y < _map.height; y++)
+            for (int x = 0; x < _map.width; x++)
+                foreach (var t in _map.GetBlockSubTypes(x, y)) counts.Add(t.ToString());
+        counts.Sort();
+        var summary = new Dictionary<string, int>();
+        foreach (var t in counts) { string k = t.StartsWith("Arrow") ? "Arrow" : t; summary[k] = summary.TryGetValue(k, out int n) ? n + 1 : 1; }
+        var parts = new List<string>();
+        foreach (var pair in summary) parts.Add($"{pair.Key}x{pair.Value}");
+        Console.WriteLine($"{_id,2} {_kind,-8} {_name} lv{_difficulty} {_map.width}x{_map.height} wp{_map.GetMaxWaypointIndex() + 1} [{string.Join(" ", parts)}] {(ok ? "OK" : "NG " + (error ?? checkError))}");
+    }
+
+    /// チュートリアルの一本道（5 x 5 のくねくね: 横の通路 3 本を左右の端でつなぐ）に新しいギミックを並べる
+    static MapData buildTutorial(string _gimmick)
+    {
+        const int W = 5, H = 5;
+        var map = new MapData();
+        map.Initialize(W, H);
+        for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++)
+                map.SetBlockType(x, y, BlockTypeUtility.Obstructs[(x * 7 + y * 3) % BlockTypeUtility.Obstructs.Length]);
+
+        // 上の段 →、右端で下へ、中の段 ←、左端で下へ、下の段 →
+        var path = new List<Vector2Int>();
+        for (int x = 0; x < W; x++) path.Add(new Vector2Int(x, 0));
+        path.Add(new Vector2Int(W - 1, 1));
+        for (int x = W - 1; x >= 0; x--) path.Add(new Vector2Int(x, 2));
+        path.Add(new Vector2Int(0, 3));
+        for (int x = 0; x < W; x++) path.Add(new Vector2Int(x, 4));
+
+        foreach (var p in path) map.SetBlockType(p.x, p.y, eBlockType.Walkable);
+        map.SetBlockType(path[0].x, path[0].y, eBlockType.Start);
+        map.SetBlockType(path[path.Count - 1].x, path[path.Count - 1].y, eBlockType.Goal);
+        for (int i = 1; i < path.Count - 1; i++) map.SetWaypointIndex(path[i].x, path[i].y, i - 1);
+
+        Vector2Int Dir(int _x, int _y) { int i = path.IndexOf(new Vector2Int(_x, _y)); return path[i + 1] - path[i]; }
+        void Add(int _x, int _y, eBlockSubType _type) => map.AddBlockSubType(_x, _y, _type);
+
+        switch (_gimmick)
+        {
+            case "arrow":
+                Add(2, 0, GimmickUtility.ToArrow(Dir(2, 0))); Add(2, 2, GimmickUtility.ToArrow(Dir(2, 2))); Add(2, 4, GimmickUtility.ToArrow(Dir(2, 4)));
+                break;
+            case "turn":
+                Add(W - 1, 0, eBlockSubType.Turn); Add(W - 1, 2, eBlockSubType.Turn); Add(0, 2, eBlockSubType.Turn); Add(0, 4, eBlockSubType.Turn);
+                break;
+            case "straight":
+                Add(2, 0, eBlockSubType.Straight); Add(W - 1, 1, eBlockSubType.Straight); Add(2, 2, eBlockSubType.Straight); Add(0, 3, eBlockSubType.Straight); Add(2, 4, eBlockSubType.Straight);
+                break;
+            case "key":
+                Add(2, 0, eBlockSubType.KeyRed); Add(2, 2, eBlockSubType.GateRed);
+                Add(3, 2, eBlockSubType.KeyBlue); Add(2, 4, eBlockSubType.GateBlue);
+                break;
+        }
+
+        // 宝箱（木）を下の段に1つ
+        Add(1, 4, eBlockSubType.Treasure1);
+        return map;
+    }
+}

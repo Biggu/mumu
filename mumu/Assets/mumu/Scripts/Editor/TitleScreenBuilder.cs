@@ -15,6 +15,7 @@ namespace mumu
         private const string PrefabPath = "Assets/mumu/Resources/Prefabs/View/Title.prefab";
         /// <summary>作成済みの判定に使う（今の構成で作ったか）</summary>
         private const string BuiltMarkerPath = "ui/gardenButton";
+        private const string StampKey = "TitleScreenBuilder";
 
         private static readonly Color TitleColor = new Color(1f, 0.92f, 0.63f);
         private static readonly Color ShadowColor = new Color(0.18f, 0.1f, 0.05f, 0.85f);
@@ -36,10 +37,16 @@ namespace mumu
         /// </summary>
         private static void autoBuild()
         {
-            if (EditorApplication.isPlayingOrWillChangePlaymode || isBuilt())
+            bool hasPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null;
+            if (EditorApplication.isPlayingOrWillChangePlaymode || !hasPrefab)
             {
                 return;
             }
+            if (!EditorBuildStamp.NeedsBuild(StampKey, isBuilt(), null))
+            {
+                return;
+            }
+            EditorBuildStamp.Save(StampKey);
             Build();
         }
 
@@ -49,7 +56,7 @@ namespace mumu
         private static bool isBuilt()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-            return prefab == null || prefab.transform.Find(BuiltMarkerPath) != null;
+            return prefab != null && prefab.transform.Find(BuiltMarkerPath) != null;
         }
 
         /// <summary>
@@ -78,6 +85,7 @@ namespace mumu
                 buildUi(root.transform, view);
 
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+                EditorBuildStamp.Save(StampKey);
                 Debug.Log("[TitleScreenBuilder] Title.prefab built");
             }
             finally

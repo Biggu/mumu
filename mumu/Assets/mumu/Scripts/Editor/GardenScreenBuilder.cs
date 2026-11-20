@@ -14,6 +14,7 @@ namespace mumu
     public static class GardenScreenBuilder
     {
         private const string PrefabPath = "Assets/mumu/Resources/Prefabs/View/Garden.prefab";
+        private const string StampKey = "GardenScreenBuilder";
         private const float HeaderHeight = 120f;
         private const float Margin = 16f;
         /// <summary>作成済みの判定に使う（今の構成で作ったか）</summary>
@@ -34,10 +35,12 @@ namespace mumu
         private static void autoBuild()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-            if (EditorApplication.isPlayingOrWillChangePlaymode || (prefab != null && prefab.transform.Find(BookButtonPath) != null))
+            bool isBuilt = prefab != null && prefab.transform.Find(BookButtonPath) != null;
+            if (EditorApplication.isPlayingOrWillChangePlaymode || !EditorBuildStamp.NeedsBuild(StampKey, isBuilt, new[] { PrefabPath }))
             {
                 return;
             }
+            EditorBuildStamp.Save(StampKey);
             Build();
         }
 
@@ -58,6 +61,7 @@ namespace mumu
                 buildStage(root, view);
                 buildUi(root, view);
                 PrefabUtility.SaveAsPrefabAsset(go, PrefabPath);
+                EditorBuildStamp.Save(StampKey);
                 Debug.Log("[GardenScreenBuilder] Garden.prefab built");
             }
             finally
@@ -86,6 +90,9 @@ namespace mumu
 
             SetField(_view, "mapRoot", mapRoot.gameObject);
             SetField(_view, "mapGroup", mapGroup);
+            // カメラと箱庭の操作（作る時に付ける。実行時には付けない）
+            mapGroup.gameObject.AddComponent<MapViewController>();
+            stage.gameObject.AddComponent<GardenInputController>();
             SetField(_view, "bgImage", bg.GetComponent<Image>());
         }
 

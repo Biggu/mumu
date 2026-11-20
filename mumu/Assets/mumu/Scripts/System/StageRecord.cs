@@ -10,6 +10,15 @@ namespace mumu
         private const int MaxStars = 3;
 
         /// <summary>
+        /// クリアしたことがあるか（記録があれば true）
+        /// </summary>
+        /// <param name="_stageNumber"></param>
+        public static bool IsCleared(int _stageNumber)
+        {
+            return find(_stageNumber) != null;
+        }
+
+        /// <summary>
         /// 最高の★数
         /// </summary>
         /// <param name="_stageNumber"></param>
@@ -30,12 +39,23 @@ namespace mumu
         }
 
         /// <summary>
-        /// 記録を更新（良い方を残す）
+        /// もどらずにクリアしたか
+        /// </summary>
+        /// <param name="_stageNumber"></param>
+        public static bool IsNoRewind(int _stageNumber)
+        {
+            StageRecordData record = find(_stageNumber);
+            return record != null && record.isNoRewind;
+        }
+
+        /// <summary>
+        /// 記録を更新（良い方を残す）。もどらずクリアを初めて達成した時は true を返す
         /// </summary>
         /// <param name="_stageNumber"></param>
         /// <param name="_stars"></param>
         /// <param name="_isPerfect"></param>
-        public static void Save(int _stageNumber, int _stars, bool _isPerfect)
+        /// <param name="_isNoRewind"></param>
+        public static bool Save(int _stageNumber, int _stars, bool _isPerfect, bool _isNoRewind)
         {
             StageRecordData record = find(_stageNumber);
             if (record == null)
@@ -45,7 +65,10 @@ namespace mumu
             }
             record.stars = Mathf.Max(record.stars, Mathf.Clamp(_stars, 0, MaxStars));
             record.isPerfect |= _isPerfect;
+            bool isFirstNoRewind = _isNoRewind && !record.isNoRewind;
+            record.isNoRewind |= _isNoRewind;
             SaveDataManager.Save();
+            return isFirstNoRewind;
         }
 
         /// <summary>

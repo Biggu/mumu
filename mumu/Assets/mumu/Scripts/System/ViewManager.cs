@@ -155,6 +155,12 @@ namespace mumu
                 return null;
             }
 
+            if (viewRoot == null)
+            {
+                Debug.LogError("[ViewManager] viewRoot が設定されていません（system シーンを確認）");
+                return null;
+            }
+
             isTransitioning = true;
             try
             {

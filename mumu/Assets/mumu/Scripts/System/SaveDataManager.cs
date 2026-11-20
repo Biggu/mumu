@@ -205,6 +205,7 @@ namespace mumu
         {
             var created = new UserSaveData();
             created.pugs.Add(DefaultPugId);
+            created.gardenPugs.Add(DefaultPugId);
             return created;
         }
 
@@ -246,8 +247,46 @@ namespace mumu
                 }
                 _data.pugs = unique;
             }
+            // version 3: おにわに入れる子を決めるようにした（持っている子の先頭から最大 MaxGarden 匹）
+            if (_data.version < 3)
+            {
+                _data.gardenPugs = new List<int>();
+                foreach (int id in _data.pugs)
+                {
+                    if (_data.gardenPugs.Count < UserSaveData.MaxGarden)
+                    {
+                        _data.gardenPugs.Add(id);
+                    }
+                }
+            }
+            if (_data.gardenPugs == null)
+            {
+                _data.gardenPugs = new List<int>();
+            }
+            sanitizeGarden(_data);
             _data.version = UserSaveData.CurrentVersion;
         }
+        /// <summary>
+        /// おにわの子を整える（持っていない子は外す、同じ子は1回だけ、上限まで、1匹もいなければ先頭の子を入れる）
+        /// </summary>
+        /// <param name="_data"></param>
+        private static void sanitizeGarden(UserSaveData _data)
+        {
+            var result = new List<int>();
+            foreach (int id in _data.gardenPugs)
+            {
+                if (_data.pugs.Contains(id) && !result.Contains(id) && result.Count < UserSaveData.MaxGarden)
+                {
+                    result.Add(id);
+                }
+            }
+            if (result.Count == 0 && _data.pugs.Count > 0)
+            {
+                result.Add(_data.pugs[0]);
+            }
+            _data.gardenPugs = result;
+        }
+
 
         /// <summary>
         /// 前の版の PlayerPrefs が残っているか
@@ -296,6 +335,8 @@ namespace mumu
             {
                 imported.pugs.Add(DefaultPugId);
             }
+
+            sanitizeGarden(imported);
 
             foreach (string key in new[] { OldSeKey, OldBgmKey, OldStageIndexKey, OldClearedKey, OldPugsKey })
             {

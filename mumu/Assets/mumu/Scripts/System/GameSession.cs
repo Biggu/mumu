@@ -128,6 +128,13 @@ namespace mumu
         /// </summary>
         public static MapData CreateMap()
         {
+#if UNITY_EDITOR
+            // デバッグメニューの「デバッグマップ」を遊ぶ時だけ（エディタ専用）
+            if (DebugTools.HasPendingMap)
+            {
+                return DebugTools.TakePendingMap();
+            }
+#endif
             if (Mode == eGameMode.Adventure)
             {
                 return StageProgress.LoadCurrentMap();

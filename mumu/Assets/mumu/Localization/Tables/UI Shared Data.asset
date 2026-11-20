@@ -215,6 +215,98 @@ MonoBehaviour:
     m_Key: PUG_EQUIPPED
     m_Metadata:
       m_Items: []
+  - m_Id: 359400724328448
+    m_Key: GARDEN_REST
+    m_Metadata:
+      m_Items: []
+  - m_Id: 359400753688576
+    m_Key: PUG_EXCHANGE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 359400753688577
+    m_Key: PUG_TO_GARDEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 359400753688578
+    m_Key: NOTICE_UNAVAILABLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 403868060053504
+    m_Key: WANDERFUL_BONUS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 403868089413632
+    m_Key: WANDERFUL_DETAIL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729512251392
+    m_Key: THEME_STORY_1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611520
+    m_Key: THEME_STORY_2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611521
+    m_Key: THEME_STORY_3
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611522
+    m_Key: THEME_STORY_4
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611523
+    m_Key: THEME_STORY_5
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611524
+    m_Key: THEME_STORY_6
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611525
+    m_Key: THEME_STORY_7
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611526
+    m_Key: THEME_STORY_8
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611527
+    m_Key: THEME_STORY_9
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611528
+    m_Key: THEME_STORY_10
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611529
+    m_Key: THEME_STORY_11
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611530
+    m_Key: THEME_STORY_12
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611531
+    m_Key: THEME_STORY_13
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611532
+    m_Key: THEME_STORY_14
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611533
+    m_Key: HINT_CONFIRM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611534
+    m_Key: HINT_USE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 414729541611535
+    m_Key: HINT_CANCEL
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

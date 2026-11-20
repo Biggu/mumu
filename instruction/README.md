@@ -1,9 +1,9 @@
-﻿# つなパグ（Pug Path）引き継ぎメモ
+# つなパグ（Pug Path）引き継ぎメモ
 
 別のセッションで作業を再開する時に最初に読む資料。ゲームの仕様・作り・決めたこと・ツール・次にやることをまとめている。
 ツールの使い方は [tools/README.md](tools/README.md)。
 
-- プロジェクト: `E:\testbranch\testdev\mumu`（Unity 6000.0.58f2、UGUI、UniTask、Unity Localization、TextMeshPro）
+- プロジェクト: `E:\testmodel\dev\mumu`（Unity 6000.0.58f2、UGUI、UniTask、Unity Localization、TextMeshPro）
 - 最初のシーン: `Assets/mumu/Scenes/system.unity`（`SystemManager` → タイトル画面）
 - タイトル: **つなパグ** / Pug Path（キャッチコピー「パグまで道をつないで、たすけだそう！」）
 - 方向性: **シンプル・中毒性・ピクセルアートでかわいい**。タイマー・ライフ・スタミナ・失敗させる手数制限は入れない（いつでも戻せる、のんびりした遊び心地を大事にする）
@@ -34,6 +34,8 @@
 
 - 一筆書きパズル。Start から上下左右に1マスずつ経路を伸ばし、Goal に着いたらクリア。自分の経路は横切れない
 - 指を離しても経路は残る。経路上のどこかを押すとそこまで巻き戻して、そこから続けられる。1つ前のマスに戻るとアンドゥ
+- **巻き戻しの範囲**: 指を離さずドラッグ中は、経路上なら1つ前のマスにだけ戻れる（5→4→3…と一歩ずつ。`InGameMap.DragStep`）。指を離してから押し直すと、経路上のどのマスへも戻れる（`InGameMap.GetPressTarget` → `PuzzlePath.MoveTo`）。ワープの入口・こわれる橋より前には戻れない
+- **ドラッグ（方向で進む）**: 経路上を押すと、そのマスまで巻き戻してそのままドラッグ開始。先端付近（`NoDragRange` = 2 マス以内）から押してもドラッグ開始。起点から半マス分（ローカル座標なので拡大縮小しても同じ）動くと、一番近い斜めの向き（マップの 4 方向＝画面の斜め）へ1マス進む。進んだら起点を今の位置に移す。タイルの当たり判定は押した時だけ使い、ドラッグ中は使わない（`MapInputController.dragPath` → `InGameMap.TryGetDragDirection` / `DragStep`）
 - **Goal の解放**: 通ったマス数（Start・Goal を除く）が `ウェイポイント数 × 解放率` 以上で Goal に入れる。解放率は難易度で 60%（Lv1）→ 72%（Lv20）→ 84%（Lv40）→ 90%（Lv50）。足りない時に Goal に入ろうとすると「Need N」と揺れる
 - **チェックポイント**: 設計した経路の 25% / 50% / 75% の位置。★が浮いていて、通ると回りながら跳ねる
 - **★**: クリア時に通ったチェックポイント数で ★3（全部）/ ★2（1つ足りない）/ ★1
@@ -44,7 +46,7 @@
 
 操作:
 - 背景・経路外のブロックのドラッグでマップ移動、ピンチ／ホイールで拡大縮小
-- 経路の先端から 5x5（`NoDragRange = 2`）の経路外ブロックは誤操作防止のため何もしない
+- 進めない時（ギミックの決まり違い・扉・Goal 未解放）は先端のブロックが横に揺れて Refused 音。揺れは `Block.PlayShake` で、重なっても元の位置からずれない（`UiTween.ShakeX` は元の X を引数で受け取る）
 - ダブルタップで先端に寄る（全体が入る倍率）。ドラッグで先端が変わったら今の倍率のまま先端に寄る
 - マップを開いた時は Start を中心に表示
 
@@ -99,14 +101,22 @@ Assets/mumu/
   Localization/         Locales, Tables（UI テーブル）, TextSetting.asset
   Scenes/system.unity
   Scripts/
-    Data/      CsvUtility, MapCsv, MapData, MapGenerator, ThemeDefine, CharacterMaster
+    Data/      CsvUtility, MapCsv, MapData, ThemeDefine, CharacterMaster
+               MapGenerator（partial。本体・公開 API と生成の流れ）, MapGenerator.Shape（形）, MapGenerator.Bridge（島をつなぐ橋）, MapGenerator.Path（経路・書き込み）, MapGenerator.Obstruct（通れないブロック）, MapGenerator.Gimmick（ギミック配置）, GimmickCounts（GimmickSettings / GimmickCounts）
     Define/    MumuEnum（eBlockType, eBlockSubType, BlockTypeUtility）
     Editor/    ビルダー・MapDataEditor・LocalizationSetup・FontSetup・SaveDataMenu など
-    InGame/    Block, InGameMap, MapViewController, PuzzlePath, PlayerPug, PointArrow, PugSprites(+CharacterSprites), ThemeSprites, TitleStage, GardenMap, GardenPug
-    System/    ViewManager, ResourceManager, SoundManager, SaveDataManager, UserSaveData, GameSession, StageProgress, StageRecord, PugCollection, GameSettings, TextLocalizer, MonoSingleton …
-    UI/Common/ MumuButton, UiTween, FadeScreen, HeartEffect, ConfettiEffect, AmbientParticles, SpriteFrameAnimation, UiImageUtility
-    UI/Popup/  SettingsPopup, MessageDialog, PopupLoader
-    UI/View/   ViewBase, TitleView, GameView, GoalGauge, StageMapView, GardenView
+    InGame/    ゲームの中身（フォルダごとに役割を分けてある）
+      InGameMap/  InGameMap（統括・公開 API）, MapBlockView（ブロックの生成と表示）, MapPathInput（押す・ドラッグ・1マス進める）, MapMarkers（走るパグと矢印）, MoveSound（移動の効果音）, MapDebugTools, MapLayout（マスの位置・上面・範囲・RaiseHeight）, TilePicker（画面→マス）, RefusalFeedback（進めなかった演出）, MapClearSequence（クリア演出）, PuzzlePath（経路の並び）, IsoDepth（描画順）, PointArrow, ePressTarget
+      Gimmick/    ギミックの決まりと見た目。新しいギミックはここに足す: GimmickUtility（種類と判定）, GimmickMaster・GimmickCounts（CSV と数）, GimmickPlacer（マップに置く）, PathRules（扉・やじるし・まがる・まっすぐの通り方）, GimmickSync（経路に合わせて扉・橋の見た目）, GimmickSprites, BlockGimmickView（上面の矢印・扉・こわれる橋）, BlockFloatingItems（浮かぶほね・カギ）
+      Block/      Block（prefab の部品と公開 API、ラベル・デコ・吹き出し）, BlockPathView（線・足あと・光る枠）, BlockPugView（Goal のパグ）, BlockCheckpointStar（★）, BlockShake（横揺れ）
+      Input/      MapInputController（指の振り分け）, MapViewController（移動・拡大縮小。IMapCameraTarget の地図なら何でも動かせる）, IMapCameraTarget, TapDetector（ダブルタップ）
+      Pug/        PlayerPug, PugSprites, CharacterSprites, PugIcons
+      Garden/     GardenMap（25×25、日付で決まる配置）, GardenLayout（MapGenerator.GenerateTerrain で作る）, GardenPug（状態・歩き・タップで跳ねる）, GardenPugRoute（行き先）, GardenPugZzz（お昼寝の z）, GardenInputController（箱庭のカメラ操作）
+      Theme/      ThemeSprites
+      Title/      TitleStage
+    System/    CommonUtility（Punch・PlaySe・GetOrAddComponent）, TokenUtility（Cancel / Restart / Ensure）, SpriteUtility（LoadCached・FilterByPrefix）, UiFactory（CreateImage・CreateText・SetFootRect・SetPugImage）, GridUtility（NoCell・Directions4・IsoPosition・GetPlaneAngle・ExpandBounds）, ViewManager, ResourceManager, SoundManager, SaveDataManager, UserSaveData, GameSession, StageProgress, StageRecord, PugCollection, GameSettings, TextLocalizer, MonoSingleton, PopupManager（ポップアップの開閉と通知・トースト・おはなし。uiRoot / notificationRoot の下に出す）, PartsLoaderManager（Prefabs/Common の部品を作る）…
+    UI/Common/ Notification（真ん中のお知らせ）, Toast（画面下のお知らせ）, ThemeStory（テーマのおはなし）, BoneBonusOverlay（ボーナス）, MumuButton（使えない時はグレーでお知らせ）, UiTween, FadeScreen, HeartEffect, ConfettiEffect, AmbientParticles, SpriteFrameAnimation, UiImageUtility
+    UI/Popup/  PopupBase, BaseParam / AlertParam / SettingsParam / PugBookParam / ConfirmParam, SettingsPopup, MessageDialog, ConfirmDialog（2つのボタンの確認。おにわ・ずかんで共通）, PugBookPopup, PopupLoader    UI/View/   ViewBase, TitleView, GameView, GoalGauge, StageMapView, GardenView
   Resources/
     MapData/      map_list.csv, maps/map_000001〜050.csv
     MasterData/   character.csv, gimmick.csv
@@ -229,7 +239,7 @@ eBlockType: `Empty=0, Walkable=1, Obstruct1=2, Start=3, Goal=4, Water=5, Obstruc
 - おにわのパグ同士は避けずに歩くので重なることがある（同じブロックでは手前の子が上）
 - おさんぽの日替わりは端末の日付で判定（ずらせば回数が戻る。サーバーなし）
 - 冒険のマップ名は「meadow 1」などの仮
-- verify の csproj は Unity が作ったものの写し。Unity のバージョンやパッケージを変えたら作り直しが必要なことがある
+- verify の csproj は `verify_build.ps1` が毎回プロジェクト直下の `Assembly-CSharp*.csproj`（Unity が作る）から作り直す（相対パスを絶対パスにする）。Unity のバージョンやパッケージを変えたら、プロジェクト直下の csproj を Unity に作り直させる
 - ユーザーが手で入れた素材: BGM（bgm_000〜003, 999）、SE（se_000001〜5, 900001）。画像はほぼジェネレーター製
 
 ---

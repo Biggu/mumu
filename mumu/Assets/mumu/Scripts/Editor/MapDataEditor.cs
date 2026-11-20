@@ -224,7 +224,7 @@ namespace mumu
             float available = position.width - 40f;
             float tile = Mathf.Clamp(Mathf.Floor(available / ((width + height) * 0.5f)), VisualMinTile, VisualMaxTile);
             float half = tile * 0.5f, quarter = tile * 0.25f;
-            float raise = tile * Block.RaiseHeight / VisualBlockSize;
+            float raise = tile * MapLayout.RaiseHeight / VisualBlockSize;
             float decoExtra = tile * (DecoAspect - 1f);
             float mapWidth = (width + height) * half;
             float mapHeight = (width + height - 2) * quarter + tile + decoExtra + raise;
@@ -529,6 +529,10 @@ namespace mumu
                 }
             }
 
+            if (GUILayout.Button("Save Debug", GUILayout.Width(BtnSmall)) && mapData != null)
+            {
+                DebugMapFile.Save(mapData);
+            }
             if (GUILayout.Button("Reload", GUILayout.Width(BtnSmall)) && confirmDiscard())
             {
                 int reopen = selectedIndex;
@@ -832,7 +836,8 @@ namespace mumu
         private void drawSpritePreview(string _label, string _suffix)
         {
             string path = ResourceManager.GetThemeSpritePath(mapData.themeId, _suffix);
-            var sprite = Resources.Load<Sprite>(path);
+            Sprite[] frames = Resources.LoadAll<Sprite>(path);
+            Sprite sprite = frames.Length > 0 ? frames[0] : null;
 
             EditorGUILayout.BeginVertical(GUILayout.Width(PreviewWidth));
             GUILayout.Label(_label);

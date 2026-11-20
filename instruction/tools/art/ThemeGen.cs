@@ -884,6 +884,120 @@ public static class Obj
     }
 }
 
+// 新テーマ（宇宙・海の底・夜の森・お城・山）のデコ（静止画）。アニメ版は DecoSheetGen にある
+public static class ObjNew
+{
+    public static void Dish(Px p)
+    {
+        G.Shadow(p, 22, 13.5, 8, 3.2);
+        G.Cyl(p, 21, 7, 13, 1.4, 0.7, new Pal("6A7488"), G.H("8A94A8"));
+        G.Ellipse(p, 21, 4, 8, 5.5, new Pal("C8D2E0"));
+        G.Ellipse(p, 21, 4, 4.5, 3, new Pal("5A6478"));
+        G.Outline(p, G.H("1E2432"));
+    }
+
+    public static void Blinker(Px p)
+    {
+        G.Shadow(p, 22, 13.5, 7, 3);
+        G.Rect(p, 20, -6, 22, 13, G.H("6A7488"));
+        G.Rect(p, 17, 12, 25, 13, G.H("4A5366"));
+        G.Flat(p, 21, -8, 2, 2, G.H("FF4A4A"));
+        p.Obj(21, -10, G.H("FFD0D0"));
+        G.Outline(p, G.H("1E2432"));
+    }
+
+    public static void SolarPanel(Px p)
+    {
+        G.Shadow(p, 22, 13.5, 9, 3.6);
+        G.Box(p, 21, 13.5, 8, 6, new Pal("2A4A8A"));
+        for (int y = p.Top; y < Px.N; y++)
+            for (int x = 0; x < Px.N; x++)
+                if (p.m[x, y] && (x + y) % 4 == 0) p.c[x, y] = G.H("6A9AE0");
+        G.Outline(p, G.H("0E1828"));
+    }
+
+    public static void Planet(Px p)
+    {
+        G.Shadow(p, 22, 13.5, 9, 3.2);
+        G.Ellipse(p, 21, 2, 12, 2.4, new Pal("E8D8B0"));
+        G.Ellipse(p, 21, 2, 8, 7, new Pal("C88A4A"));
+        G.Outline(p, G.H("4A2A14"));
+    }
+
+    public static void Jellyfish(Px p)
+    {
+        G.Shadow(p, 22, 13.5, 6, 2.5);
+        G.Ellipse(p, 21, 2, 7, 5, new Pal("F09CD8"));
+        for (int i = -4; i <= 4; i += 2)
+            for (int y = 7; y <= 12; y++)
+                if (y % 2 == 1 || i == 0) p.Obj(21 + i, y, G.H("E878C8"));
+        G.Outline(p, G.H("6A2A5A"));
+    }
+
+    public static void Fish(Px p)
+    {
+        G.Shadow(p, 22, 13.5, 8, 3);
+        G.Ellipse(p, 21, 6, 7, 4, new Pal("FFA040"));
+        G.Capsule(p, 12, 6, 9, 6, 2.2, new Pal("FF8020"));
+        p.Set(24, 5, Color.White);
+        p.Set(24, 4, G.H("1E1E24"));
+        G.Outline(p, G.H("6A3A10"));
+    }
+
+    public static void Lantern(Px p)
+    {
+        G.Shadow(p, 22, 13.5, 6, 2.6);
+        G.Rect(p, 20, 4, 22, 13, G.H("5A5E66"));
+        G.Box(p, 21, 4, 4, 3, new Pal("3A3E46"));
+        G.Flat(p, 21, 0, 2.5, 2.5, G.H("FFE070"));
+        p.Obj(21, -4, G.H("FFF4C0"));
+        G.Outline(p, G.H("1A1C22"));
+    }
+
+    public static void Glowcap(Px p) { Obj.Mushroom(p, "38D8C8"); }
+
+    public static void DarkTree(Px p) { Obj.Tree(p, new Pal("4A3A2A"), new Pal("2A5A3A"), G.H("E8E060"), G.H("C8E050")); }
+
+    public static void DarkBush(Px p) { Obj.Bush(p, new Pal("2E5A3E"), G.H("E8E060")); }
+
+    public static void Flag(Px p)
+    {
+        G.Shadow(p, 22, 13.5, 6, 3);
+        G.Rect(p, 20, -12, 21, 13, G.H("6A6A6A"));
+        G.Rect(p, 22, -12, 28, -7, G.H("D84040"));
+        G.Rect(p, 22, -6, 26, -6, G.H("F8E070"));
+        G.Outline(p, G.H("2A2A2A"));
+    }
+
+    public static void Torch(Px p)
+    {
+        G.Shadow(p, 22, 13.5, 4, 2.5);
+        G.Rect(p, 20, 2, 22, 13, G.H("6A4A2A"));
+        G.Flat(p, 21, 0, 2, 3, G.H("FF8A20"));
+        p.Obj(21, -2, G.H("FFE070"));
+        G.Outline(p, G.H("2A1A0A"));
+    }
+
+    public static void Tower(Px p)
+    {
+        G.Shadow(p, 22, 14, 8, 3.5);
+        G.Box(p, 21, 14.5, 6, 14, new Pal("9A9AA8"));
+        G.Tri(p, 21, -10, 0, 7, new Pal("5A4AA0"));
+        G.Outline(p, G.H("2A2A3A"));
+    }
+
+    public static void Pine(Px p) { Obj.Tree(p, new Pal("6A4A2A"), new Pal("2E7A4A")); }
+
+    public static void Cloud(Px p)
+    {
+        G.Shadow(p, 22, 13.5, 9, 3);
+        G.Ellipse(p, 16, 6, 6, 4, new Pal("FFFFFF"));
+        G.Ellipse(p, 25, 5, 7, 5, new Pal("F4F8FF"));
+        G.Ellipse(p, 21, 8, 9, 3.5, new Pal("DDE6F0"));
+        G.Outline(p, G.H("8A9AB0"));
+    }
+}
+
 public class ObstructSet
 {
     public Action<Px> Base;
@@ -1239,6 +1353,83 @@ public static class ThemeGen
             BgDecor = null
         });
 
+        // 000015 space station
+        SideFn stationSide = G.Side("3A4252", "4A5366", "8A94A8", 0.12);
+        list.Add(new Theme
+        {
+            Id = "000015", Name = "space",
+            Untouched = Ground(G.Noise("5A6478", 5, "6A7488", 0.05, "464E60", 0.05), stationSide, null),
+            Touched = Ground(G.Noise("3E8CA0", 6, "6CC4DC", 0.08, "2E6E84", 0.06), stationSide, delegate (Px p) { G.Dots(p, 0, 6, 11, G.H("B8F4FF"), G.H("FFFFFF")); }),
+            Obstructs = MakeObstructs(G.Noise("3A4050", 5, "4A5366", 0.08), stationSide,
+                ObjNew.Dish, ObjNew.Blinker, ObjNew.SolarPanel, ObjNew.Planet),
+            Water = Liquid("2A1A4A", "140A2A", "1E1436", "9C7CFF"),
+            Bridge = BridgeTile("8A94A8", "140A2A", "1E1436"),
+            BgBase = Plain("0E1430", 4),
+            BgDecor = delegate (Color[,] img, Random r) { Patches(img, r, 8, 1.12); Sprinkle(img, r, 26, G.H("FFFFFF"), G.H("B8D8FF"), G.H("FFE8A0")); }
+        });
+
+        // 000016 underwater
+        SideFn sandbedSide = G.Side("8A7450", "A08A60", null, 0);
+        list.Add(new Theme
+        {
+            Id = "000016", Name = "underwater",
+            Untouched = Ground(G.Noise("CDB888", 7, "DCC89C", 0.05, "B09C6C", 0.05), sandbedSide, null),
+            Touched = Ground(G.Noise("7ED0BE", 6, "A4E6D6", 0.08, "5AB0A0", 0.06), G.Side("8A7450", "A08A60", "5AB0A0", 0.14), delegate (Px p) { G.Dots(p, 0, 8, 4, G.H("FFFFFF"), G.H("F4B8E0")); }),
+            Obstructs = MakeObstructs(G.Noise("5C6A78", 6, "6E7E8C", 0.08), G.Side("4A5664", "5C6A78", "7A8C9A", 0.14),
+                ObjNew.Jellyfish, ObjNew.Fish, Obj.Coral, Obj.Seaweed),
+            Water = Liquid("1E6AA8", "0E3A66", "164E80", "7FD8FF"),
+            Bridge = BridgeTile("8A6A4A", "0E3A66", "164E80"),
+            BgBase = Plain("2E6E9A", 5),
+            BgDecor = delegate (Color[,] img, Random r) { Patches(img, r, 10, 0.92); Sprinkle(img, r, 18, G.H("BFEFFF"), G.H("E6F8FF")); Petals(img, r, 6, G.H("F08AB8"), G.H("FFD0E0")); }
+        });
+
+        // 000017 night forest
+        SideFn forestBarkSide = G.Side("4A3626", "604632", "3A5A34", 0.14);
+        list.Add(new Theme
+        {
+            Id = "000017", Name = "moon_forest",
+            Untouched = Ground(G.Noise("2E4A36", 6, "3A5A44", 0.05, "24402C", 0.05), G.Side("3A2E22", "4E3C2A", null, 0), null),
+            Touched = Ground(G.Noise("3F6A48", 6, "4E7E58", 0.08, "2E5A3A", 0.06), forestBarkSide, delegate (Px p) { G.Dots(p, 0, 8, 6, G.H("E8F090"), G.H("C8E878")); }),
+            Obstructs = MakeObstructs(G.Noise("2A3A2E", 5, "3A4E3C", 0.08), forestBarkSide,
+                ObjNew.Lantern, ObjNew.Glowcap, ObjNew.DarkTree, ObjNew.DarkBush),
+            Water = Liquid("1E3A5A", "0E2038", "142A48", "7FB0D8"),
+            Bridge = BridgeTile("5A4030", "0E2038", "142A48"),
+            BgBase = Plain("1E3A2C", 4),
+            BgDecor = delegate (Color[,] img, Random r) { Tufts(img, r, 40, G.H("2A4E36")); Sprinkle(img, r, 12, G.H("E8F090"), G.H("F8F8C8")); }
+        });
+
+        // 000018 castle
+        SideFn stoneSide = G.Side("6A6A74", "7E7E88", "9A9AA4", 0.14);
+        list.Add(new Theme
+        {
+            Id = "000018", Name = "castle",
+            Untouched = Ground(G.Noise("9A9484", 7, "AEA898", 0.05, "86806E", 0.05), G.Side("6A6A74", "7E7E88", null, 0), null),
+            Touched = Ground(G.Noise("8AB060", 7, "A2C878", 0.08, "70964C", 0.06), stoneSide, delegate (Px p) { G.Flowers(p, 0, 6, G.H("F8E050"), G.H("FFFFFF"), G.H("F07AB4")); }),
+            Obstructs = MakeObstructs(G.Noise("6A6A74", 5, "7E7E88", 0.08), stoneSide,
+                ObjNew.Flag, ObjNew.Torch, ObjNew.Tower, Obj.Barrel),
+            Water = Liquid("3A7AAA", "1E4A6A", "24587E", "B0E0FF"),
+            Bridge = BridgeTile("7A5A3A", "1E4A6A", "24587E"),
+            BgBase = Plain("6E8A4A", 5),
+            BgDecor = delegate (Color[,] img, Random r) { Patches(img, r, 8, 0.93); Tufts(img, r, 30, G.H("5E7A3A")); }
+        });
+
+        // 000019 mountain
+        SideFn rockSide = G.Side("5A4E44", "6E6054", "8A8C84", 0.14);
+        list.Add(new Theme
+        {
+            Id = "000019", Name = "mountain",
+            Untouched = Ground(G.Noise("8A7E70", 8, "A09484", 0.05, "6E6256", 0.05), rockSide, null),
+            Touched = Ground(G.Noise("7AB05A", 7, "96C676", 0.08, "5E9446", 0.06), rockSide, delegate (Px p) { G.Dots(p, 0, 7, 5, G.H("F4F8FF"), G.H("E0EAF4")); }),
+            Obstructs = MakeObstructs(G.Noise("7A7068", 6, "8A8078", 0.08), rockSide,
+                ObjNew.Pine, ObjNew.Cloud,
+                delegate (Px p) { Obj.Rock(p, new Pal("8A8E96")); },
+                delegate (Px p) { Obj.CapRock(p, new Pal("8A8E96"), new Pal("F4F8FF")); }),
+            Water = Liquid("4A8AC8", "24507A", "2C6090", "D0EBFF"),
+            Bridge = BridgeTile("8A6A4A", "24507A", "2C6090"),
+            BgBase = Plain("7C9C6A", 4),
+            BgDecor = delegate (Color[,] img, Random r) { Patches(img, r, 8, 0.94); Sprinkle(img, r, 14, G.H("9A9A94"), G.H("B8B8B0")); Tufts(img, r, 24, G.H("5E7E4A")); }
+        });
+
         return list;
     }
 
@@ -1251,15 +1442,31 @@ public static class ThemeGen
         };
     }
 
+    /// <summary>背景タイルを4コマのシート（横に並べる）にする。デコの点が順番にきらめく</summary>
+    /// <param name="t"></param>
+    /// <param name="path"></param>
     static void SaveBg(Theme t, string path)
     {
+        const int Frames = 4;
         Random r = new Random(t.Id.GetHashCode());
-        Color[,] img = new Color[B, B];
-        for (int y = 0; y < B; y++) for (int x = 0; x < B; x++) img[x, y] = t.BgBase(x, y, r);
+        Color[,] baseImg = new Color[B, B];
+        for (int y = 0; y < B; y++) for (int x = 0; x < B; x++) baseImg[x, y] = t.BgBase(x, y, r);
+        Color[,] img = (Color[,])baseImg.Clone();
         if (t.BgDecor != null) t.BgDecor(img, r);
-        using (Bitmap big = new Bitmap(B * 4, B * 4, PixelFormat.Format32bppArgb))
+        using (Bitmap big = new Bitmap(B * 4 * Frames, B * 4, PixelFormat.Format32bppArgb))
         {
-            for (int y = 0; y < B; y++) for (int x = 0; x < B; x++) for (int j = 0; j < 4; j++) for (int i = 0; i < 4; i++) big.SetPixel(x * 4 + i, y * 4 + j, img[x, y]);
+            for (int f = 0; f < Frames; f++)
+                for (int y = 0; y < B; y++)
+                    for (int x = 0; x < B; x++)
+                    {
+                        Color c = img[x, y];
+                        // 変わった点（デコ）だけ、コマごとに順番に光らせる（4コマで一周）
+                        bool changed = c.ToArgb() != baseImg[x, y].ToArgb();
+                        if (changed && (f + (x * 7 + y * 13) % Frames) % Frames == 0) c = G.Mix(c, Color.White, 0.35);
+                        for (int j = 0; j < 4; j++)
+                            for (int i = 0; i < 4; i++)
+                                big.SetPixel((f * B + x) * 4 + i, y * 4 + j, c);
+                    }
             big.Save(path, ImageFormat.Png);
         }
     }

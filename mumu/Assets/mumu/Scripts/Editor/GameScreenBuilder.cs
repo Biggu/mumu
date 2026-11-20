@@ -14,6 +14,7 @@ namespace mumu
     public static class GameScreenBuilder
     {
         private const string PrefabPath = "Assets/mumu/Resources/Prefabs/View/Game.prefab";
+        private const string StampKey = "GameScreenBuilder";
         private const string PugSheetPath = "Assets/mumu/Resources/Sprites/Common/pug.png";
         private const string UiName = "ui";
         private const string HeaderName = "header";
@@ -24,7 +25,7 @@ namespace mumu
         private const string BonePlateName = "bonePlate";
         private const string BoneIconPath = "Assets/mumu/Resources/Sprites/Common/gimmick_bone.png";
         /// <summary>作り直す時に消す古い UI</summary>
-        private static readonly string[] OldUiNames = { HeaderName, "resetButton", "progressText", "star1", "star1 (1)", "star1 (2)" };
+        private static readonly string[] OldUiNames = { HeaderName, HintButtonName, "resetButton", "progressText", "star1", "star1 (1)", "star1 (2)" };
 
         private const float HeaderHeight = 140f;
         private const float HeaderMargin = 16f;
@@ -32,6 +33,10 @@ namespace mumu
         private const float StarSpacing = 72f;
         private const int StarCount = 3;
         private const float MenuButtonSize = 104f;
+        private const string HintButtonName = "hintButton";
+        private const float HintButtonSize = 96f;
+        private const float HintButtonMargin = 24f;
+        private const float HintCostFontSize = 24f;
         private static readonly Color StageTextColor = new Color(1f, 0.92f, 0.63f);
 
         /// <summary>
@@ -47,10 +52,16 @@ namespace mumu
         /// </summary>
         private static void autoBuild()
         {
-            if (EditorApplication.isPlayingOrWillChangePlaymode || isBuilt())
+            bool hasPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null;
+            if (EditorApplication.isPlayingOrWillChangePlaymode || !hasPrefab)
             {
                 return;
             }
+            if (!EditorBuildStamp.NeedsBuild(StampKey, isBuilt(), null))
+            {
+                return;
+            }
+            EditorBuildStamp.Save(StampKey);
             Build();
         }
 
@@ -60,7 +71,9 @@ namespace mumu
         private static bool isBuilt()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-            return prefab == null || prefab.transform.Find($"{UiName}/{HeaderName}/{BonePlateName}") != null;
+            return prefab != null && prefab.transform.Find($"{UiName}/{HeaderName}/{BonePlateName}") != null
+                && prefab.transform.Find($"{UiName}/{HintButtonName}") != null
+                && hasMapControllers(prefab);
         }
 
         /// <summary>
@@ -97,14 +110,81 @@ namespace mumu
                 }
 
                 buildHeader(ui, view);
+                buildHintButton(ui, view);
+                addMapControllers(view);
 
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+                EditorBuildStamp.Save(StampKey);
                 Debug.Log("[GameScreenBuilder] Game.prefab header built");
             }
             finally
             {
                 PrefabUtility.UnloadPrefabContents(root);
             }
+        }
+
+        /// <summary>
+        /// マップの親（GameView の mapGroup）を取る
+        /// </summary>
+        /// <param name="_view"></param>
+        private static RectTransform mapGroupOf(GameView _view)
+        {
+            return new SerializedObject(_view).FindProperty("mapGroup").objectReferenceValue as RectTransform;
+        }
+
+        /// <summary>
+        /// マップの親にカメラと操作のコンポーネントを付ける（無いものだけ）
+        /// </summary>
+        /// <param name="_view"></param>
+        private static void addMapControllers(GameView _view)
+        {
+            RectTransform mapGroup = mapGroupOf(_view);
+            if (mapGroup == null)
+            {
+                Debug.LogError("[GameScreenBuilder] GameView の mapGroup が設定されていません");
+                return;
+            }
+            if (mapGroup.GetComponent<MapViewController>() == null)
+            {
+                mapGroup.gameObject.AddComponent<MapViewController>();
+            }
+            if (mapGroup.GetComponent<MapInputController>() == null)
+            {
+                mapGroup.gameObject.AddComponent<MapInputController>();
+            }
+        }
+
+        /// <summary>
+        /// マップの親に操作のコンポーネントが付いているか
+        /// </summary>
+        /// <param name="_prefab"></param>
+        private static bool hasMapControllers(GameObject _prefab)
+        {
+            var view = _prefab.GetComponent<GameView>();
+            RectTransform mapGroup = view != null ? mapGroupOf(view) : null;
+            return mapGroup != null && mapGroup.GetComponent<MapViewController>() != null && mapGroup.GetComponent<MapInputController>() != null;
+        }
+
+        /// <summary>
+        /// ヒントボタン（左上。冒険だけ表示。下にほねの値段）
+        /// </summary>
+        /// <param name="_ui"></param>
+        /// <param name="_view"></param>
+        private static void buildHintButton(Transform _ui, GameView _view)
+        {
+            var topLeft = new Vector2(0f, 1f);
+            RectTransform hint = Create(HintButtonName, _ui);
+            SetRect(hint, topLeft, topLeft, new Vector2(HintButtonMargin, -HintButtonMargin), new Vector2(HintButtonSize, HintButtonSize));
+            hint.pivot = topLeft;
+            // TODO: パグのヘルプの絵に差し替える（今は仮のアイコン）
+            MumuButton button = AddButton(hint, LoadSprite("Kit/kit_icon_question"), Color.white, Image.Type.Simple, null);
+
+            var bottom = new Vector2(0.5f, 0f);
+            RectTransform cost = Create("cost", hint);
+            SetRect(cost, bottom, bottom, new Vector2(0f, 4f), new Vector2(HintButtonSize, 30f));
+            AddPlainText(cost, GameView.HintCost.ToString(), HintCostFontSize, TextBrown);
+
+            SetField(_view, "hintButton", button);
         }
 
         /// <summary>

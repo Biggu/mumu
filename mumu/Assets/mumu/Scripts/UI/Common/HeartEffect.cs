@@ -25,10 +25,7 @@ namespace mumu
         /// <param name="_token"></param>
         public static async UniTaskVoid Play(RectTransform _parent, Vector2 _from, Vector2 _move, float _size, float _duration, CancellationToken _token)
         {
-            if (sprite == null)
-            {
-                sprite = ResourceManager.Instance.Load<Sprite>(SpritePath);
-            }
+            SpriteUtility.LoadCached(ref sprite, SpritePath);
 
             var go = new GameObject("heart", typeof(RectTransform), typeof(Image));
             go.transform.SetParent(_parent, false);

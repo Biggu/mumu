@@ -17,6 +17,7 @@ namespace mumu
         private const float HeaderHeight = 120f;
         private const float Margin = 16f;
         private const float PlayAreaHeight = 170f;
+        private const string StampKey = "StageMapScreenBuilder";
         private static readonly Color TitleColor = new Color(1f, 0.92f, 0.63f);
 
         /// <summary>
@@ -32,10 +33,12 @@ namespace mumu
         /// </summary>
         private static void autoBuild()
         {
-            if (EditorApplication.isPlayingOrWillChangePlaymode || AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null)
+            bool isBuilt = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null;
+            if (EditorApplication.isPlayingOrWillChangePlaymode || !EditorBuildStamp.NeedsBuild(StampKey, isBuilt, new[] { PrefabPath }))
             {
                 return;
             }
+            EditorBuildStamp.Save(StampKey);
             Build();
         }
 
@@ -96,6 +99,7 @@ namespace mumu
                 SetField(view, "titleText", titleText);
 
                 PrefabUtility.SaveAsPrefabAsset(go, PrefabPath);
+                EditorBuildStamp.Save(StampKey);
                 Debug.Log("[StageMapScreenBuilder] StageMap.prefab built");
             }
             finally

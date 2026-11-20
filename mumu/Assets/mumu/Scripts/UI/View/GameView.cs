@@ -29,13 +29,12 @@ namespace mumu
         private const int PerfectHeartCount = 16;
         private const float PerfectHeartRadius = 260f;
         private const float RewardDialogDelay = 0.6f;
-        private const string ToastSpritePath = "Sprites/UI/ui_plate";
-        private const float ToastY = 220f;
-        private static readonly Vector2 ToastSize = new Vector2(760f, 110f);
-        private const float ToastFontSize = 30f;
-        private const float ToastFadeDuration = 0.2f;
-        private const float ToastShowDuration = 2.4f;
-        private static readonly Color ToastTextColor = new Color(1f, 0.95f, 0.75f);
+        /// <summary>もどらずクリアのボーナス（ほね、初めて達成した時だけ）</summary>
+        private const int MissionBonusBones = 10;
+        /// <summary>ヒントのほね（固定）</summary>
+        public const int HintCost = 10;
+        /// <summary>大きな★の大きさ（★3つを1つにまとめる時）</summary>
+        private const float BigStarSize = 96f;
 
         /// <summary>ブロックの親</summary>
         [SerializeField]
@@ -81,13 +80,15 @@ namespace mumu
         private TMP_Text boneText = null;
 
         private int lastBoneCount = -1;
-        /// <summary>画面下のお知らせ（使い回す）</summary>
-        private CanvasGroup toast = null;
-        private TMP_Text toastText = null;
-        private System.Threading.CancellationTokenSource toastCts = null;
+        /// <summary>もどらずクリアの大きな★（クリア時だけ作る）</summary>
+        private Image bigStar = null;
+        /// <summary>左上のヒントボタン（冒険だけ。Game プレハブに入っている）</summary>
+        [SerializeField]
+        private MumuButton hintButton = null;
 
         private InGameMap map = null;
         private MapViewController viewController = null;
+        private MapInputController inputController = null;
         private int litStarCount = 0;
         /// <summary>ポップアップ表示中か（重ねて開かない）</summary>
         private bool isPopupOpen = false;
@@ -116,7 +117,13 @@ namespace mumu
                 map.SetOnPathChanged(onPathChanged);
                 map.SetOnCleared(onCleared);
                 map.SetOnMessage(onMessage);
-                UiImageUtility.SetTiled(bgImage, map.Sprites.Background);
+                setupHintButton();
+                if (isHintActive())
+                {
+                    map.ShowHint(SaveDataManager.Data.hintSeed);
+                }
+                refreshHint();
+                ThemeBackground.Show(bgImage, map.Sprites);
                 SoundManager sound = SoundManager.Instance;
                 if (sound != null)
                 {
@@ -176,7 +183,7 @@ namespace mumu
             foreach (GimmickData gimmick in unseen)
             {
                 Sprite icon = GimmickMaster.LoadIcon(gimmick);
-                await MessageDialog.ShowTextAsync(transform, TextLocalizer.Get("GIMMICK_NEW_TITLE", gimmick.Name), gimmick.Description, false, icon != null ? new[] { icon } : null, destroyCancellationToken);
+                await PopupManager.Instance.Open(ePopup.Alert, new AlertParam(TextLocalizer.Get("GIMMICK_NEW_TITLE", gimmick.Name), gimmick.Description, false, icon != null ? new[] { icon } : null), destroyCancellationToken);
                 if (destroyCancellationToken.IsCancellationRequested)
                 {
                     return;
@@ -192,77 +199,7 @@ namespace mumu
         /// <param name="_key"></param>
         private void onMessage(string _key)
         {
-            showToast(TextLocalizer.Get(_key));
-        }
-
-        /// <summary>
-        /// 画面下にお知らせを少しの間出す（出ている時は差し替え）
-        /// </summary>
-        /// <param name="_message"></param>
-        private void showToast(string _message)
-        {
-            if (toast == null)
-            {
-                var go = new GameObject("toast", typeof(RectTransform), typeof(CanvasGroup), typeof(Image));
-                go.transform.SetParent(transform, false);
-                var rect = (RectTransform)go.transform;
-                rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0f);
-                rect.anchoredPosition = new Vector2(0f, ToastY);
-                rect.sizeDelta = ToastSize;
-                Image back = go.GetComponent<Image>();
-                back.sprite = ResourceManager.Instance.Load<Sprite>(ToastSpritePath);
-                back.type = Image.Type.Sliced;
-                back.raycastTarget = false;
-                toast = go.GetComponent<CanvasGroup>();
-                toast.blocksRaycasts = false;
-
-                var textGo = new GameObject("text", typeof(RectTransform), typeof(TextMeshProUGUI));
-                textGo.transform.SetParent(go.transform, false);
-                var textRect = (RectTransform)textGo.transform;
-                textRect.anchorMin = Vector2.zero;
-                textRect.anchorMax = Vector2.one;
-                textRect.offsetMin = new Vector2(24f, 12f);
-                textRect.offsetMax = new Vector2(-24f, -12f);
-                var text = textGo.GetComponent<TextMeshProUGUI>();
-                text.fontSize = ToastFontSize;
-                text.color = ToastTextColor;
-                text.alignment = TextAlignmentOptions.Center;
-                text.raycastTarget = false;
-                text.enableAutoSizing = true;
-                text.fontSizeMin = 18f;
-                text.fontSizeMax = ToastFontSize;
-                toastText = text;
-            }
-
-            toast.transform.SetAsLastSibling();
-            toastText.text = _message;
-            if (toastCts != null)
-            {
-                toastCts.Cancel();
-                toastCts.Dispose();
-            }
-            toastCts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
-            toastAsync(toastCts.Token).Forget();
-        }
-
-        /// <summary>
-        /// ふわっと出して、しばらくしたら消す
-        /// </summary>
-        /// <param name="_token"></param>
-        private async UniTaskVoid toastAsync(System.Threading.CancellationToken _token)
-        {
-            float total = ToastFadeDuration * 2f + ToastShowDuration;
-            for (float time = 0f; time < total; time += Time.unscaledDeltaTime)
-            {
-                float alpha = time < ToastFadeDuration ? time / ToastFadeDuration
-                    : (time > total - ToastFadeDuration ? (total - time) / ToastFadeDuration : 1f);
-                toast.alpha = alpha;
-                if (await UniTask.Yield(PlayerLoopTiming.Update, _token).SuppressCancellationThrow())
-                {
-                    return;
-                }
-            }
-            toast.alpha = 0f;
+            PopupManager.Instance.ShowToast(TextLocalizer.Get(_key));
         }
 
         /// <summary>
@@ -289,33 +226,6 @@ namespace mumu
             lastBoneCount = collected;
         }
 
-#if UNITY_EDITOR
-        /// <summary>X を押している間の経路番号表示</summary>
-        private bool isDebugPreview = false;
-
-        /// <summary>
-        /// デバッグ操作（C: その場でクリア、X 長押し: 経路の番号を表示）
-        /// </summary>
-        private void Update()
-        {
-            if (map == null || map.Path == null || isPopupOpen || ViewManager.Instance.IsTransitioning)
-            {
-                return;
-            }
-
-            if (Input.GetKeyDown(KeyCode.C) && !map.Path.IsCleared)
-            {
-                map.DebugSolve();
-            }
-
-            bool isPreview = Input.GetKey(KeyCode.X) && !map.Path.IsCleared;
-            if (isPreview != isDebugPreview)
-            {
-                isDebugPreview = isPreview;
-                map.SetWaypointPreview(isPreview);
-            }
-        }
-#endif
 
         /// <summary>
         /// マップ操作の設定
@@ -334,13 +244,20 @@ namespace mumu
                 bgImage.raycastTarget = true;
             }
 
+            // 操作のコンポーネントは Game プレハブに入っている（無ければビルダーで作り直す）
             MapViewController controller = mapGroup.GetComponent<MapViewController>();
-            if (controller == null)
+            MapInputController input = mapGroup.GetComponent<MapInputController>();
+            if (controller != null && input != null)
             {
-                controller = mapGroup.gameObject.AddComponent<MapViewController>();
+                controller.Setup((RectTransform)transform, map);
+                viewController = controller;
+                input.Setup(controller, map);
+                inputController = input;
             }
-            controller.Setup((RectTransform)transform, map);
-            viewController = controller;
+            else
+            {
+                Debug.LogError("[GameView] マップの操作が付いていません（mumu > Build Game Header で作り直す）");
+            }
         }
 
         /// <summary>
@@ -361,7 +278,7 @@ namespace mumu
                 return;
             }
             isPopupOpen = true;
-            await SettingsPopup.OpenAsync(transform, onRetry, onBackToTitle, destroyCancellationToken);
+            await PopupManager.Instance.Open(ePopup.Settings, new SettingsParam(onRetry, onBackToTitle), destroyCancellationToken);
             isPopupOpen = false;
         }
 
@@ -393,7 +310,7 @@ namespace mumu
                 return;
             }
             isPopupOpen = true;
-            bool isYes = await MessageDialog.ShowAsync(transform, "CONFIRM_TITLE", _bodyKey, true, destroyCancellationToken);
+            bool isYes = await PopupManager.Instance.Open(ePopup.Alert, new AlertParam(TextLocalizer.Get("CONFIRM_TITLE"), TextLocalizer.Get(_bodyKey), true), destroyCancellationToken);
             isPopupOpen = false;
             if (isYes)
             {
@@ -427,9 +344,9 @@ namespace mumu
         /// </summary>
         private async UniTaskVoid playClearAsync()
         {
-            if (viewController != null)
+            if (inputController != null)
             {
-                viewController.SetInputEnabled(false);
+                inputController.SetInputEnabled(false);
             }
             if (menuButton != null)
             {
@@ -449,6 +366,7 @@ namespace mumu
                 setStars(starCount, false);
                 for (int i = 0; i < starCount && i < stars.Length; i++)
                 {
+                    CommonUtility.PlaySe(eSe.StarPing);
                     punchStar(i);
                     if (await UniTask.Delay(TimeSpan.FromSeconds(ClearStarInterval), cancellationToken: destroyCancellationToken).SuppressCancellationThrow())
                     {
@@ -457,10 +375,22 @@ namespace mumu
                 }
             }
 
+            // 冒険で、指を離してからもどらずにクリアし、★が3つなら大きな★にまとめる
+            bool isNoRewind = GameSession.Mode == eGameMode.Adventure && !map.HasRewound;
+            if (isNoRewind && stars != null && map.Path.StarCount == stars.Length)
+            {
+                showBigStar();
+                if (await UniTask.Delay(TimeSpan.FromSeconds(ClearStarInterval), cancellationToken: destroyCancellationToken).SuppressCancellationThrow())
+                {
+                    return;
+                }
+            }
+
             bool isPerfect = map.Path.IsPerfect;
             ConfettiEffect.Play((RectTransform)transform, ConfettiCount, destroyCancellationToken);
             if (isPerfect)
             {
+                CommonUtility.PlaySe(eSe.Fanfare);
                 setCrown(true);
                 if (crownImage != null)
                 {
@@ -473,11 +403,37 @@ namespace mumu
                 return;
             }
 
+            bool isFirstNoRewind = false;
             if (GameSession.Mode == eGameMode.Adventure)
             {
-                StageRecord.Save(StageProgress.CurrentNumber, map.Path.StarCount, isPerfect);
+                // クリアしたらヒントは終わり（次の冒険に持ち越さない）
+                SaveDataManager.Data.hintStage = 0;
+                isFirstNoRewind = StageRecord.Save(StageProgress.CurrentNumber, map.Path.StarCount, isPerfect, isNoRewind);
             }
+            // クリアしたら、次におにわを開いた時に子が喜ぶ
+            SaveDataManager.Data.gardenCheerPending = true;
+            SaveDataManager.Save();
             addBones();
+
+            // テーマの最後のステージは、そのテーマのおはなしを1回だけ見せる（次のステージへ進む前）
+            if (GameSession.Mode == eGameMode.Adventure && StageProgress.IsLastOfCurrentTheme())
+            {
+                int themeId = StageProgress.GetCurrentThemeId();
+                if (!SaveDataManager.Data.seenThemeStories.Contains(themeId))
+                {
+                    SaveDataManager.Data.seenThemeStories.Add(themeId);
+                    SaveDataManager.Save();
+                    await PopupManager.Instance.ShowStoryAsync(TextLocalizer.Get("THEME_STORY_" + themeId));
+                }
+            }
+
+            // もどらずクリアは初めての時だけボーナス
+            if (isFirstNoRewind)
+            {
+                SaveDataManager.Data.bones += MissionBonusBones;
+                SaveDataManager.Save();
+                await BoneBonusOverlay.ShowAsync(transform, TextLocalizer.Get("WANDERFUL_BONUS", MissionBonusBones), TextLocalizer.Get("WANDERFUL_DETAIL"), destroyCancellationToken);
+            }
 
             // 報酬は Advance（冒険の初回クリア判定が変わる）より前に受け取る
             int rewardId = GameSession.ClaimReward(out int duplicateBones);
@@ -498,7 +454,8 @@ namespace mumu
             if (GameSession.Mode == eGameMode.Stroll && GameSession.IsDailyStroll && GameSession.DailyStrollRemaining <= 1)
             {
                 isPopupOpen = true;
-                await MessageDialog.ShowAsync(transform, "DAILY_DONE_TITLE", "DAILY_DONE_BODY", false, destroyCancellationToken);
+                CommonUtility.PlaySe(eSe.AlertChime);
+                await PopupManager.Instance.Open(ePopup.Alert, new AlertParam(TextLocalizer.Get("DAILY_DONE_TITLE"), TextLocalizer.Get("DAILY_DONE_BODY"), false), destroyCancellationToken);
                 isPopupOpen = false;
             }
 
@@ -506,6 +463,113 @@ namespace mumu
             {
                 ViewManager.Instance.ToNextStage().Forget();
             }
+        }
+
+        /// <summary>
+        /// ヒントボタンに押した時の処理をつける（ボタンは Game プレハブに入っている）
+        /// </summary>
+        private void setupHintButton()
+        {
+            if (hintButton != null)
+            {
+                hintButton.SetOnClick(onClickHintButton);
+            }
+        }
+
+        /// <summary>
+        /// ヒントボタンの押せるか（冒険だけ、ヒントが出ていない時、ほねが足りる時）
+        /// </summary>
+        private void refreshHint()
+        {
+            if (hintButton == null)
+            {
+                return;
+            }
+            bool isAdventure = GameSession.Mode == eGameMode.Adventure;
+            hintButton.gameObject.SetActive(isAdventure);
+            hintButton.interactable = isAdventure && !isHintActive() && SaveDataManager.Data.bones >= HintCost;
+        }
+
+        /// <summary>
+        /// このステージでヒントを出しているか
+        /// </summary>
+        private static bool isHintActive()
+        {
+            return SaveDataManager.Data.hintStage > 0 && SaveDataManager.Data.hintStage == StageProgress.CurrentNumber;
+        }
+
+        /// <summary>
+        /// ヒントボタン押下時の処理（使うか確認してから、ほねを使って経路の一部を出す）
+        /// </summary>
+        private void onClickHintButton()
+        {
+            if (isHintActive() || SaveDataManager.Data.bones < HintCost || isPopupOpen)
+            {
+                return;
+            }
+            openHintConfirmAsync().Forget();
+        }
+
+        /// <summary>
+        /// ヒントを使うか確認する（はい・いいえ）
+        /// </summary>
+        private async UniTaskVoid openHintConfirmAsync()
+        {
+            isPopupOpen = true;
+            var param = new ConfirmParam(TextLocalizer.Get("HINT_CONFIRM", HintCost), TextLocalizer.Get("HINT_USE"), true, useHint, TextLocalizer.Get("HINT_CANCEL"), true, null);
+            await PopupManager.Instance.Open(ePopup.Confirm, param, destroyCancellationToken);
+            isPopupOpen = false;
+        }
+
+        /// <summary>
+        /// ヒントを使う（ほねを使い、経路の一部を出す。クリアまで残る）
+        /// </summary>
+        private void useHint()
+        {
+            if (isHintActive() || SaveDataManager.Data.bones < HintCost)
+            {
+                return;
+            }
+
+            SaveDataManager.Data.bones -= HintCost;
+            SaveDataManager.Data.hintStage = StageProgress.CurrentNumber;
+            SaveDataManager.Data.hintSeed = UnityEngine.Random.Range(1, int.MaxValue);
+            SaveDataManager.Save();
+            CommonUtility.PlaySe(eSe.HintChime);
+            map.ShowHint(SaveDataManager.Data.hintSeed);
+            refreshHint();
+        }
+
+        /// <summary>
+        /// ★3つを大きな★1つにまとめて跳ねさせる（もどらずクリア）
+        /// </summary>
+        private void showBigStar()
+        {
+            Image middle = stars[stars.Length / 2];
+            if (middle == null)
+            {
+                return;
+            }
+
+            foreach (Image star in stars)
+            {
+                if (star != null)
+                {
+                    star.gameObject.SetActive(false);
+                }
+            }
+            GameObject go = PartsLoaderManager.Instance.Create(ePart.BigStar, middle.transform.parent);
+            if (go == null)
+            {
+                return;
+            }
+            bigStar = go.GetComponent<Image>();
+            bigStar.sprite = RainbowStar.Still;
+            CommonUtility.GetOrAddComponent<SpriteFrameAnimation>(go).Play(RainbowStar.Frames, RainbowStar.TwinkleFps);
+            bigStar.rectTransform.sizeDelta = new Vector2(BigStarSize, BigStarSize);
+            bigStar.rectTransform.anchoredPosition = ((RectTransform)middle.transform).anchoredPosition;
+            CommonUtility.PlaySe(eSe.Sparkle);
+            UiTween.PunchScale(bigStar.transform, Vector3.one, StarPunchAmount, StarPunchDuration, destroyCancellationToken).Forget();
         }
 
         /// <summary>
@@ -576,6 +640,7 @@ namespace mumu
             int gained = GameSession.Mode == eGameMode.Adventure ? StageRecord.SaveBones(StageProgress.CurrentNumber, collected) : collected;
             if (gained > 0)
             {
+                CommonUtility.PlaySe(eSe.CoinGet);
                 SaveDataManager.Data.bones += gained;
                 SaveDataManager.Save();
             }
@@ -590,11 +655,12 @@ namespace mumu
         {
             CharacterData character = CharacterMaster.Get(_characterId);
             CharacterSprites sprites = CharacterSprites.Load(character);
+            CommonUtility.PlaySe(eSe.HappyBark);
             bool isDuplicate = _duplicateBones > 0;
             string title = TextLocalizer.Get(isDuplicate ? "PUG_DUPLICATE_TITLE" : "PUG_JOINED_TITLE");
             string body = isDuplicate ? TextLocalizer.Get("PUG_DUPLICATE_BODY", character.Name, _duplicateBones) : TextLocalizer.Get("PUG_JOINED_BODY", character.Name);
             isPopupOpen = true;
-            await MessageDialog.ShowTextAsync(transform, title, body, false, sprites != null ? sprites.Happy : null, destroyCancellationToken, character.Tier);
+            await PopupManager.Instance.Open(ePopup.Alert, new AlertParam(title, body, false, sprites != null ? sprites.Happy : null, character.Tier), destroyCancellationToken);
             isPopupOpen = false;
         }
 

@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -8,7 +7,7 @@ namespace mumu
     /// <summary>
     /// 設定ポップアップ（効果音・BGM の ON/OFF、ゲーム中はやりなおし・タイトルへ）
     /// </summary>
-    public class SettingsPopup : MonoBehaviour
+    public class SettingsPopup : PopupBase
     {
         public const string PrefabName = "settings_popup";
 
@@ -47,48 +46,16 @@ namespace mumu
         private Action onRetryAction = null;
         /// <summary>タイトルへ押下時の処理</summary>
         private Action onTitleAction = null;
-        /// <summary>閉じた後に実行する処理</summary>
-        private Action pendingAction = null;
-        private UniTaskCompletionSource closeSource = null;
 
         /// <summary>
-        /// 開いて閉じるまで待つ（_onRetry・_onTitle が null ならそのボタンは出さない）
+        /// 初期化（SettingsParam を受け取り、表示する）
         /// </summary>
-        /// <param name="_parent"></param>
-        /// <param name="_onRetry"></param>
-        /// <param name="_onTitle"></param>
-        /// <param name="_token"></param>
-        public static async UniTask OpenAsync(Transform _parent, Action _onRetry, Action _onTitle, CancellationToken _token)
+        /// <param name="_param"></param>
+        public override void Setup(BaseParam _param)
         {
-            SettingsPopup popup = await PopupLoader.InstantiateAsync<SettingsPopup>(PrefabName, _parent, _token);
-            if (popup == null)
-            {
-                return;
-            }
-
-            popup.setup(_onRetry, _onTitle);
-            bool isCanceled = await popup.closeSource.Task.AttachExternalCancellation(_token).SuppressCancellationThrow();
-
-            Action action = isCanceled ? null : popup.pendingAction;
-            if (popup != null)
-            {
-                Destroy(popup.gameObject);
-            }
-
-            // 閉じてから実行する（確認ダイアログが重ならないように）
-            action?.Invoke();
-        }
-
-        /// <summary>
-        /// 初期化
-        /// </summary>
-        /// <param name="_onRetry"></param>
-        /// <param name="_onTitle"></param>
-        private void setup(Action _onRetry, Action _onTitle)
-        {
-            onRetryAction = _onRetry;
-            onTitleAction = _onTitle;
-            closeSource = new UniTaskCompletionSource();
+            var param = (SettingsParam)_param;
+            onRetryAction = param.OnRetry;
+            onTitleAction = param.OnTitle;
 
             seToggle.SetOnClick(onClickSeToggle);
             bgmToggle.SetOnClick(onClickBgmToggle);
@@ -98,8 +65,8 @@ namespace mumu
                 dimButton.SetClickSeEnabled(false);
                 dimButton.SetOnClick(onClickCloseButton);
             }
-            setupMenuButton(retryButton, _onRetry != null, onClickRetryButton);
-            setupMenuButton(titleButton, _onTitle != null, onClickTitleButton);
+            setupMenuButton(retryButton, param.OnRetry != null, onClickRetryButton);
+            setupMenuButton(titleButton, param.OnTitle != null, onClickTitleButton);
 
             refresh();
             if (panel != null)
@@ -162,7 +129,7 @@ namespace mumu
         /// </summary>
         private void onClickRetryButton()
         {
-            close(onRetryAction);
+            close(false, onRetryAction);
         }
 
         /// <summary>
@@ -170,7 +137,7 @@ namespace mumu
         /// </summary>
         private void onClickTitleButton()
         {
-            close(onTitleAction);
+            close(false, onTitleAction);
         }
 
         /// <summary>
@@ -178,17 +145,7 @@ namespace mumu
         /// </summary>
         private void onClickCloseButton()
         {
-            close(null);
-        }
-
-        /// <summary>
-        /// 閉じる（_action は閉じた後に実行）
-        /// </summary>
-        /// <param name="_action"></param>
-        private void close(Action _action)
-        {
-            pendingAction = _action;
-            closeSource.TrySetResult();
+            close(false);
         }
 
         /// <summary>

@@ -199,7 +199,7 @@ MonoBehaviour:
   textComponent: {fileID: 4483389790104523285}
   longPressTime: 1
   repeatInterval: 0.1
-  clickSe: 900001
+  clickSe: 1
   isClickSeEnabled: 1
 --- !u!1 &2180010098300807498
 GameObject:
@@ -1261,7 +1261,7 @@ MonoBehaviour:
   textComponent: {fileID: 0}
   longPressTime: 1
   repeatInterval: 0.1
-  clickSe: 900001
+  clickSe: 1
   isClickSeEnabled: 1
 --- !u!1 &6908812643405360163
 GameObject:
@@ -1565,7 +1565,7 @@ MonoBehaviour:
   textComponent: {fileID: 4190850503511438408}
   longPressTime: 1
   repeatInterval: 0.1
-  clickSe: 900001
+  clickSe: 1
   isClickSeEnabled: 1
 --- !u!1 &7142975923496082511
 GameObject:
@@ -1691,7 +1691,7 @@ MonoBehaviour:
   textComponent: {fileID: 3024281890296991244}
   longPressTime: 1
   repeatInterval: 0.1
-  clickSe: 900001
+  clickSe: 1
   isClickSeEnabled: 1
 --- !u!1 &7386604063895872853
 GameObject:

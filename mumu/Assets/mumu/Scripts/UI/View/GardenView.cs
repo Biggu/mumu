@@ -7,19 +7,13 @@ using UnityEngine.UI;
 namespace mumu
 {
     /// <summary>
-    /// おにわ（仲間のパグが遊ぶ箱庭と、全キャラクターの一覧）
+    /// おにわ（仲間のパグが遊ぶ箱庭と、おにわに入っている子の操作）
     /// </summary>
     public class GardenView : ViewBase
     {
-        /// <summary>箱庭が画面に占める割合（横）</summary>
-        private const float StageFitRateX = 0.95f;
-        /// <summary>箱庭が画面に占める割合（縦）</summary>
-        private const float StageFitRateY = 0.6f;
-        /// <summary>箱庭の中心のずらし量（下の一覧を避けて上へ）</summary>
-        private static readonly Vector2 StageOffset = new Vector2(0f, 60f);
-        /// <summary>一度に出すパグの上限（多すぎると重なるため）</summary>
-        private const int MaxPugs = 30;
         private const float PugSize = 44f;
+        /// <summary>おにわを開いた時の倍率（100%）</summary>
+        private const float GardenStartScale = 1f;
         /// <summary>仲良し・ついて歩くを判定する間隔（秒）</summary>
         private const float SocialInterval = 1f;
         /// <summary>判定ごとに誰かがついて歩き始める確率</summary>
@@ -31,14 +25,13 @@ namespace mumu
         private const float HeartSize = 28f;
         private const float HeartDuration = 1f;
 
-
         /// <summary>箱庭のブロックの親</summary>
         [SerializeField]
         private GameObject mapRoot = null;
-        /// <summary>箱庭の親（画面に合わせて拡大）</summary>
+        /// <summary>箱庭の親（カメラで拡大縮小・移動する）</summary>
         [SerializeField]
         private RectTransform mapGroup = null;
-        /// <summary>背景</summary>
+        /// <summary>背景（押すと箱庭を動かせる）</summary>
         [SerializeField]
         private Image bgImage = null;
         /// <summary>タイトルへ戻るボタン</summary>
@@ -57,8 +50,15 @@ namespace mumu
         private readonly List<GardenPug> pugs = new List<GardenPug>();
         private readonly Dictionary<GardenPug, float> heartTimes = new Dictionary<GardenPug, float>();
         private GardenMap gardenMap = null;
+        private MapViewController viewController = null;
+        private GardenInputController input = null;
         private float nextSocialTime = 0f;
         private bool isBookOpen = false;
+        /// <summary>前回並べた子（並び順が変わった時だけ並べ直す）</summary>
+        private readonly List<GardenPug> placedPugs = new List<GardenPug>();
+        /// <summary>前回並べた時の、各子のブロック</summary>
+        private readonly List<Block> placedBlocks = new List<Block>();
+        private readonly List<Block> blockBuffer = new List<Block>();
 
         /// <summary>
         /// 初期化
@@ -87,11 +87,31 @@ namespace mumu
             }
             if (emptyText != null)
             {
-                emptyText.gameObject.SetActive(owned.Count == 0);
+                emptyText.transform.parent.gameObject.SetActive(owned.Count == 0);
             }
 
-            await setupGardenAsync(owned);
+            await setupGardenAsync();
+            cheerRandomPug();
             await base.onInitView();
+        }
+
+        /// <summary>
+        /// クリア後の最初のおにわで、ランダムな子が跳ねてハートを出す
+        /// </summary>
+        private void cheerRandomPug()
+        {
+            if (!SaveDataManager.Data.gardenCheerPending || pugs.Count == 0)
+            {
+                return;
+            }
+            SaveDataManager.Data.gardenCheerPending = false;
+            SaveDataManager.Save();
+
+            GardenPug pug = pugs[Random.Range(0, pugs.Count)];
+            pug.Cheer();
+            CommonUtility.PlaySe(eSe.Bark1);
+            Vector2 above = ((RectTransform)pug.transform).anchoredPosition + new Vector2(0f, HeartOffsetY);
+            HeartEffect.Play((RectTransform)mapRoot.transform, above, new Vector2(0f, HeartRise), HeartSize, HeartDuration, destroyCancellationToken).Forget();
         }
 
         /// <summary>
@@ -106,14 +126,7 @@ namespace mumu
 
             // 手前の子から順に「ブロックのすぐ後ろ」へ入れると、同じブロックの子は奥から手前の順に並ぶ
             pugs.Sort((_a, _b) => _a.Depth.CompareTo(_b.Depth));
-            foreach (GardenPug pug in pugs)
-            {
-                Block block = gardenMap.GetBlock(pug.AnchorCell);
-                if (block != null)
-                {
-                    IsoDepth.PlaceAfter(pug.transform, block.transform);
-                }
-            }
+            placeIfChanged();
 
             if (Time.unscaledTime >= nextSocialTime)
             {
@@ -121,6 +134,53 @@ namespace mumu
                 showFriendHearts();
                 startFollow();
             }
+        }
+
+        /// <summary>
+        /// 子の並び順かブロックが変わった時だけ、ブロックのすぐ後ろへ並べ直す
+        /// </summary>
+        private void placeIfChanged()
+        {
+            blockBuffer.Clear();
+            foreach (GardenPug pug in pugs)
+            {
+                blockBuffer.Add(gardenMap.GetBlock(pug.AnchorCell));
+            }
+            if (isSamePlacement())
+            {
+                return;
+            }
+
+            for (int i = 0; i < pugs.Count; i++)
+            {
+                if (blockBuffer[i] != null)
+                {
+                    IsoDepth.PlaceAfter(pugs[i].transform, blockBuffer[i].transform);
+                }
+            }
+            placedPugs.Clear();
+            placedPugs.AddRange(pugs);
+            placedBlocks.Clear();
+            placedBlocks.AddRange(blockBuffer);
+        }
+
+        /// <summary>
+        /// 前回と同じ並び・同じブロックか
+        /// </summary>
+        private bool isSamePlacement()
+        {
+            if (placedPugs.Count != pugs.Count)
+            {
+                return false;
+            }
+            for (int i = 0; i < pugs.Count; i++)
+            {
+                if (placedPugs[i] != pugs[i] || placedBlocks[i] != blockBuffer[i])
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         /// <summary>
@@ -174,10 +234,9 @@ namespace mumu
         }
 
         /// <summary>
-        /// 箱庭を作って仲間を放す
+        /// 今日の箱庭を作り、カメラと操作をつなぎ、おにわに入っている子を放す
         /// </summary>
-        /// <param name="_owned"></param>
-        private async UniTask setupGardenAsync(IReadOnlyList<int> _owned)
+        private async UniTask setupGardenAsync()
         {
             if (mapRoot == null || mapGroup == null)
             {
@@ -191,16 +250,20 @@ namespace mumu
             }
             gardenMap = map;
 
-            UiImageUtility.SetTiled(bgImage, map.Sprites.Background);
-            fitStage(map.GetContentBounds());
+            ThemeBackground.Show(bgImage, map.Sprites);
+            bgImage.raycastTarget = true;
+            attachCamera(map);
             AmbientParticles.Create(mapGroup.parent, mapGroup.GetSiblingIndex() + 1, GardenMap.ThemeId);
             AmbientCritters.Create(mapGroup.parent, mapGroup.GetSiblingIndex() + 2, GardenMap.ThemeId);
 
-
             var cells = new List<Vector2Int>(map.WalkableCells);
-            for (int i = 0; i < _owned.Count && i < MaxPugs && cells.Count > 0; i++)
+            foreach (int id in PugCollection.GardenIds)
             {
-                CharacterData character = CharacterMaster.Get(_owned[i]);
+                if (cells.Count == 0)
+                {
+                    break;
+                }
+                CharacterData character = CharacterMaster.Get(id);
                 CharacterSprites sprites = CharacterSprites.Load(character);
                 if (sprites == null)
                 {
@@ -215,32 +278,66 @@ namespace mumu
                     cells.RemoveAt(index);
                 }
                 GardenPug pug = GardenPug.Create(mapRoot.transform, character, sprites, map, cell, PugSize);
-                pug.SetOnEquip(onEquipPug);
-                pug.SetEquipped(character.Id == PugCollection.EquippedId);
+                pug.SetOnTapped(onPugTapped);
+                pug.SetEquipped(id == PugCollection.EquippedId);
                 pugs.Add(pug);
             }
         }
 
         /// <summary>
-        /// 箱庭を画面に合わせる
+        /// カメラ（拡大縮小・移動）を箱庭につなぐ
         /// </summary>
-        /// <param name="_bounds"></param>
-        private void fitStage(Rect _bounds)
+        /// <param name="_map"></param>
+        private void attachCamera(GardenMap _map)
         {
-            Rect view = ((RectTransform)transform).rect;
-            float scale = Mathf.Min(view.width * StageFitRateX / _bounds.width, view.height * StageFitRateY / _bounds.height);
-            mapGroup.localScale = new Vector3(scale, scale, 1f);
-            mapGroup.anchoredPosition = StageOffset - _bounds.center * scale;
+            // 操作のコンポーネントは Garden プレハブに入っている（無ければビルダーで作り直す）
+            viewController = mapGroup.GetComponent<MapViewController>();
+            input = mapGroup.parent.GetComponent<GardenInputController>();
+            if (viewController != null && input != null)
+            {
+                viewController.Setup((RectTransform)transform, _map, GardenStartScale);
+                input.Setup(viewController);
+            }
+            else
+            {
+                Debug.LogError("[GardenView] 箱庭の操作が付いていません（mumu > Build Garden Screen で作り直す）");
+            }
         }
 
         /// <summary>
-        /// つれていく・はずすを押した時（連れていく子は1匹、はずすと男の子に戻る）
+        /// パグをタップした（跳ねて、操作の確認を出す）
         /// </summary>
         /// <param name="_pug"></param>
-        private void onEquipPug(GardenPug _pug)
+        private void onPugTapped(GardenPug _pug)
         {
-            int id = _pug.Character.Id == PugCollection.EquippedId ? PugCollection.DefaultPlayerId : _pug.Character.Id;
-            PugCollection.Equip(id);
+            showPugActionAsync(_pug).Forget();
+        }
+
+        /// <summary>
+        /// パグの操作の確認を出す（一緒にいく・お休み）
+        /// </summary>
+        /// <param name="_pug"></param>
+        private async UniTaskVoid showPugActionAsync(GardenPug _pug)
+        {
+            int id = _pug.Character.Id;
+            bool isEquipped = id == PugCollection.EquippedId;
+            bool canRest = PugCollection.GardenIds.Count > 1;
+
+            var param = new ConfirmParam(
+                _pug.Character.Name,
+                TextLocalizer.Get(isEquipped ? "PUG_UNEQUIP" : "PUG_EQUIP"), true, () => onEquipSelected(_pug),
+                TextLocalizer.Get("GARDEN_REST"), canRest, () => onRestSelected(_pug));
+            await PopupManager.Instance.Open(ePopup.Confirm, param, destroyCancellationToken);
+        }
+
+        /// <summary>
+        /// 一緒にいく・はずすを押した（連れていく子は1匹、はずすと男の子に戻る）。確認はもう一度出す
+        /// </summary>
+        /// <param name="_pug"></param>
+        private void onEquipSelected(GardenPug _pug)
+        {
+            int id = _pug.Character.Id;
+            PugCollection.Equip(id == PugCollection.EquippedId ? PugCollection.DefaultPlayerId : id);
             foreach (GardenPug pug in pugs)
             {
                 pug.SetEquipped(pug.Character.Id == PugCollection.EquippedId);
@@ -250,6 +347,23 @@ namespace mumu
             {
                 sound.PlaySe(eSe.Checkpoint);
             }
+            showPugActionAsync(_pug).Forget();
+        }
+
+        /// <summary>
+        /// お休みを押した（おにわから出す。最後の1匹は出せない）
+        /// </summary>
+        /// <param name="_pug"></param>
+        private void onRestSelected(GardenPug _pug)
+        {
+            if (!PugCollection.RemoveFromGarden(_pug.Character.Id))
+            {
+                return;
+            }
+
+            pugs.Remove(_pug);
+            heartTimes.Remove(_pug);
+            Object.Destroy(_pug.gameObject);
         }
 
         /// <summary>
@@ -261,7 +375,7 @@ namespace mumu
         }
 
         /// <summary>
-        /// ずかんを開く（交換したら新しい子が出るよう、おにわを開き直す）
+        /// ずかんを開く（交換・庭へで変わったら、おにわを開き直す）
         /// </summary>
         private async UniTaskVoid openBookAsync()
         {
@@ -270,9 +384,9 @@ namespace mumu
                 return;
             }
             isBookOpen = true;
-            bool isExchanged = await PugBookPopup.OpenAsync(transform, destroyCancellationToken);
+            bool isChanged = await PopupManager.Instance.Open(ePopup.PugBook, new PugBookParam(), destroyCancellationToken);
             isBookOpen = false;
-            if (isExchanged && !destroyCancellationToken.IsCancellationRequested)
+            if (isChanged && !destroyCancellationToken.IsCancellationRequested)
             {
                 ViewManager.Instance.ToGarden().Forget();
             }
