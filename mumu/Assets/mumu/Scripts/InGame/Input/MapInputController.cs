@@ -155,7 +155,7 @@ namespace mumu
                         headBeforeDrag = headBefore;
 
                         // ドラッグ開始：指の位置を画面の中心へ
-                        view.MoveHeadTo(_eventData.position, eventCamera);
+                       // view.MoveHeadTo(_eventData.position, eventCamera);
                         return;
                 }
             }
