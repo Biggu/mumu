@@ -40,6 +40,16 @@ namespace mumu
         public float FitScale => fitScale;
 
         /// <summary>
+        /// 指定したスクリーン位置を、移動・拡大中のコンテンツのローカル座標へ変換
+        /// </summary>
+        public Vector2 ScreenToContentPosition(Vector2 _screenPosition, Camera _camera)
+        {
+            Vector2 viewportPosition = toViewport(_screenPosition, _camera);
+            float scale = content.localScale.x;
+            return (viewportPosition - content.anchoredPosition) / scale;
+        }
+
+        /// <summary>
         /// 初期化（_startScale が 0 なら地図全体が入る倍率。0 より大きければその倍率で中心に表示）
         /// </summary>
         /// <param name="_viewport"></param>
