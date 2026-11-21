@@ -279,8 +279,13 @@ namespace mumu
                 return;
             }
             isPopupOpen = true;
-            await PopupManager.Instance.Open(ePopup.Settings, new SettingsParam(onRetry, onBackToTitle), destroyCancellationToken);
+            Action afterClose = null;
+            await PopupManager.Instance.Open(
+                ePopup.Settings,
+                new SettingsParam(() => afterClose = onRetry, () => afterClose = onBackToTitle),
+                destroyCancellationToken);
             isPopupOpen = false;
+            afterClose?.Invoke();
         }
 
         /// <summary>

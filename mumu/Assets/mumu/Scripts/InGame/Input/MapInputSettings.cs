@@ -41,6 +41,9 @@ namespace mumu
         public float DragStepRate = 0.5f;
 
         [Header("拡大・移動")]
+        [Tooltip("初期表示の倍率。FitScale に対する倍率（1 = FitScale、1.2 = 20% 拡大）")]
+        [Min(0.01f)]
+        public float DefaultZoomRate = 1f;
         [Tooltip("初めて表示した時、マップが画面に占める割合（横）")]
         public float FitRateX = 0.85f;
         [Tooltip("初めて表示した時、マップが画面に占める割合（縦）")]
@@ -55,6 +58,15 @@ namespace mumu
         public float PanLimitRate = 0.8f;
         [Tooltip("先端へ寄る時の移動時間（秒）")]
         public float FocusDuration = 0.35f;
+        [Header("自動フォーカス")]
+        [Tooltip("先端が画面端に近づき、さらに端方向へ動いている時、自動で先端を中央へ寄せる")]
+        public bool AutoFocusNearEdge = true;
+        [Tooltip("画面の各端から何割以内を端付近と判定するか（0.18 = 画面の18%）")]
+        [Range(0f, 0.49f)]
+        public float AutoFocusEdgeMarginRate = 0.18f;
+        [Tooltip("自動フォーカスの連続発生を防ぐ待ち時間（秒）")]
+        [Min(0f)]
+        public float AutoFocusCooldown = 0.75f;
         [Tooltip("ホイール1段あたりの拡大率")]
         public float ScrollZoomStep = 1.1f;
         [Tooltip("ホイール1回で拡大縮小に使う上限")]

@@ -39,7 +39,35 @@ namespace mumu
         /// <summary>初期表示の倍率（マップ全体が入る）</summary>
         public float FitScale => fitScale;
 
+        
+
+        /// <summary>経路の先端位置を viewport ローカル座標で取得する（pivot 基準）</summary>
+        public Vector2 GetHeadViewportPosition()
+        {
+            return content.anchoredPosition + map.GetFocusPosition() * Scale;
+        }
+
+
         /// <summary>
+        /// 先端が画面端のマージン内にあり、かつ、その端へ向かって動いているかを判定する。
+        /// _edgeMarginRate は画面幅／高さに対する割合（例：0.18 = 18%）。
+        /// </summary>
+        public bool IsHeadMovingTowardEdge(Vector2 _previousPosition, Vector2 _currentPosition, float _edgeMarginRate)
+        {
+            Rect rect = viewport.rect;
+            float marginRate = Mathf.Clamp(_edgeMarginRate, 0f, 0.49f);
+            float marginX = rect.width * marginRate;
+            float marginY = rect.height * marginRate;
+
+            bool movingTowardLeft = _currentPosition.x <= rect.xMin + marginX && _currentPosition.x < _previousPosition.x;
+            bool movingTowardRight = _currentPosition.x >= rect.xMax - marginX && _currentPosition.x > _previousPosition.x;
+            bool movingTowardBottom = _currentPosition.y <= rect.yMin + marginY && _currentPosition.y < _previousPosition.y;
+            bool movingTowardTop = _currentPosition.y >= rect.yMax - marginY && _currentPosition.y > _previousPosition.y;
+
+            return movingTowardLeft || movingTowardRight || movingTowardBottom || movingTowardTop;
+        }
+
+/// <summary>
         /// 指定したスクリーン位置を、移動・拡大中のコンテンツのローカル座標へ変換
         /// </summary>
         public Vector2 ScreenToContentPosition(Vector2 _screenPosition, Camera _camera)
@@ -68,7 +96,10 @@ namespace mumu
             minScale = fitScale * MinZoomRate;
             maxScale = Mathf.Max(fitScale * MaxZoomRate, MaxScaleAbsolute);
 
-            float start = _startScale > 0f ? _startScale : fitScale;
+            // No explicit start scale: use the configurable multiplier of FitScale.
+            float start = _startScale > 0f
+                ? _startScale
+                : Mathf.Clamp(fitScale * MapInputSettings.Current.DefaultZoomRate, minScale, maxScale);
             setScale(start);
             content.anchoredPosition = clamp(-map.GetFocusPosition() * start, start);
         }
