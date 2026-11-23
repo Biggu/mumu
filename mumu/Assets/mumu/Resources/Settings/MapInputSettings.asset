@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa5f7268782bcbe47928a83262f0b1d7, type: 3}
   m_Name: MapInputSettings
   m_EditorClassIdentifier: 
-  DragDelayPerBlock: 0.25
+  DragDelayPerBlock: 0.1
   NoDragRange: 2
   DragStepRate: 0.5
+  DefaultZoomRate: 1.5
   FitRateX: 0.85
   FitRateY: 0.75
   MinZoomRate: 0.6
@@ -22,6 +23,9 @@ MonoBehaviour:
   MaxScaleAbsolute: 7
   PanLimitRate: 0.8
   FocusDuration: 0.35
+  AutoFocusNearEdge: 1
+  AutoFocusEdgeMarginRate: 0.1
+  AutoFocusCooldown: 0.75
   ScrollZoomStep: 1.1
   MaxScrollDelta: 3
   TapMoveThreshold: 10
