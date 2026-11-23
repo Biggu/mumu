@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace mumu
 {
@@ -15,31 +14,7 @@ namespace mumu
 
         private const float OpenPunchAmount = 0.05f;
         private const float OpenPunchDuration = 0.2f;
-        private const float IconSize = 120f;
-        private const float StarSize = 22f;
-        private const float NameFontSize = 24f;
-        private const float SmallFontSize = 22f;
-        private const float PriceFontSize = 24f;
-        private static readonly Vector2 PriceButtonSize = new Vector2(160f, 54f);
-        private static readonly Color TextBrown = new Color(0.29f, 0.17f, 0.06f);
-        private static readonly Color NewColor = new Color(0.95f, 0.35f, 0.55f);
-        private static readonly Color EquippedColor = new Color(0.25f, 0.6f, 0.95f);
-        private static readonly Color DisabledColor = new Color(0.7f, 0.7f, 0.7f);
-        private static readonly Color[] TierBackColors =
-        {
-            new Color(1f, 1f, 1f, 0f),
-            new Color(0.7f, 0.9f, 1f, 0.45f),
-            new Color(0.85f, 0.7f, 1f, 0.45f),
-            new Color(1f, 0.85f, 0.35f, 0.6f),
-            new Color(1f, 0.6f, 0.5f, 0.6f),
-            new Color(1f, 0.55f, 0.85f, 0.7f),
-        };
-        private static readonly Color SilhouetteColor = new Color(0f, 0f, 0f, 0.5f);
-
-        private const string StarPath = "Sprites/UI/ui_star_on";
-        private const string BonePath = "Sprites/Common/gimmick_bone";
-        private const string ButtonPath = "Sprites/UI/ui_button";
-        private const string PanelPath = "Sprites/UI/ui_panel";
+        private const string ScrollItemPrefabPath = "Prefabs/Common/pug_book_scroll_item";
 
         /// <summary>中身のパネル（開く時に跳ねる）</summary>
         [SerializeField]
@@ -64,33 +39,17 @@ namespace mumu
         private static readonly Color TabSelectedColor = Color.white;
         private int selectedTier = CharacterMaster.MinTier;
 
-        /// <summary>
-        /// 1匹分の表示
-        /// </summary>
+        /// <summary>1匹分の表示</summary>
         private class Item
         {
-            public CharacterData Character;
-            /// <summary>とくべつな子のシルエットを外すため</summary>
-            public Image Icon;
-            public TMP_Text NameText;
-            public TMP_Text CountText;
-            public GameObject NewBadge;
-            public MumuButton PriceButton;
-            public Image PriceButtonImage;
-            /// <summary>持っている時の「もってる」</summary>
-            public GameObject OwnedLabel;
-            /// <summary>連れていく子の「いっしょ」</summary>
-            public GameObject EquippedBadge;
-            /// <summary>交換できない子の「おさんぽで あえるかも」</summary>
-            public GameObject SecretLabel;
-            /// <summary>1匹分のカード（tier ごとに出し入れする）</summary>
-            public GameObject Root;
+            public PugBookScrollItem View;
         }
 
         /// <summary>いま並んでいる tier のカード</summary>
         private List<Item> items = new List<Item>();
         /// <summary>tier ごとに作ったカード（一度作ったら作り直さない）</summary>
         private readonly Dictionary<int, List<Item>> tierItems = new Dictionary<int, List<Item>>();
+        private PugBookScrollItem scrollItemPrefab = null;
         private bool isExchanged = false;
         private bool isConfirming = false;
 
@@ -122,6 +81,11 @@ namespace mumu
                     int tier = CharacterMaster.MinTier + i;
                     tierTabs[i].SetOnClick(() => onClickTab(tier));
                 }
+            }
+            scrollItemPrefab = ResourceManager.Instance.Load<PugBookScrollItem>(ScrollItemPrefabPath);
+            if (scrollItemPrefab == null)
+            {
+                return;
             }
             showTier(selectedTier);
             UiTween.PunchScale(panel, Vector3.one, OpenPunchAmount, OpenPunchDuration, destroyCancellationToken).Forget();
@@ -183,7 +147,7 @@ namespace mumu
         {
             foreach (Item item in _cards)
             {
-                item.Root.SetActive(_isActive);
+                item.View.gameObject.SetActive(_isActive);
             }
         }
 
@@ -196,122 +160,17 @@ namespace mumu
             boneText.text = TextLocalizer.Get("PUG_BOOK_BONES", bones);
             foreach (Item item in items)
             {
-                int count = PugCollection.Count(item.Character.Id);
-                item.CountText.text = "";
-                item.NewBadge.SetActive(count == 0 && !item.Character.IsSecret);
-                item.EquippedBadge.SetActive(count > 0 && item.Character.Id == PugCollection.EquippedId);
-                item.OwnedLabel.SetActive(count > 0);
-                if (item.SecretLabel != null)
-                {
-                    item.SecretLabel.SetActive(count == 0);
-                }
-
-                // とくべつな子は持つまでシルエットと ？？？
-                bool isHidden = item.Character.IsSecret && count == 0;
-                item.Icon.color = isHidden ? SilhouetteColor : Color.white;
-                item.NameText.text = isHidden ? TextLocalizer.Get("UNKNOWN") : item.Character.Name;
-
-                // 持っている子は交換できない（ボタンの代わりに「もってる」）
-                if (item.PriceButton != null)
-                {
-                    item.PriceButton.gameObject.SetActive(item.Character.IsForSale);
-                    bool canBuy = bones >= item.Character.Price;
-                    item.PriceButtonImage.color = canBuy ? Color.white : DisabledColor;
-                }
-                if (!isHidden && item.Character.Tier >= PugAura.MinTier)
-                {
-                    PugAura.Attach(item.Icon.rectTransform, item.Character.Tier, IconSize);
-                }
+                item.View.Refresh(bones, PugCollection.EquippedId);
             }
         }
 
-        /// <summary>
-        /// 1匹分（tier の色の台・パグ・名前・★・持っている数・NEW・交換ボタン）
-        /// </summary>
+        /// <summary>スクロールアイテムのプレハブを作成してキャラクター情報を渡す</summary>
         /// <param name="_character"></param>
         private Item createItem(CharacterData _character)
         {
-            var item = new Item { Character = _character };
-            Image back = UiFactory.CreateImage("item", content, ResourceManager.Instance.Load<Sprite>(PanelPath), Vector2.zero);
-            back.type = Image.Type.Sliced;
-            back.preserveAspect = false;
-            Transform root = back.transform;
-            item.Root = back.gameObject;
-
-            Image tierBack = UiFactory.CreateImage("tier", root, null, Vector2.zero);
-            tierBack.color = TierBackColors[Mathf.Clamp(_character.Tier, CharacterMaster.MinTier, CharacterMaster.MaxTier) - 1];
-            stretch(tierBack.rectTransform, 8f);
-
-            // ずかんはアイコン集から（キャラごとの画像は読み込まない）
-            Image icon = UiFactory.CreateImage("icon", root, PugIcons.Get(_character.Id), new Vector2(IconSize, IconSize));
-            place(icon.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -8f));
-            item.Icon = icon;
-
-            TMP_Text nameText = UiFactory.CreateText("name", root, _character.Name, NameFontSize, TextBrown);
-            item.NameText = nameText;
-            place(nameText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -IconSize - 8f));
-            nameText.rectTransform.sizeDelta = new Vector2(180f, 30f);
-
-            // tier の数だけ★
-            Sprite star = ResourceManager.Instance.Load<Sprite>(StarPath);
-            for (int i = 0; i < _character.Tier; i++)
-            {
-                Image starImage = UiFactory.CreateImage("star", root, star, new Vector2(StarSize, StarSize));
-                place(starImage.rectTransform, new Vector2(0.5f, 1f), new Vector2((i - (_character.Tier - 1) * 0.5f) * StarSize, -IconSize - 42f));
-            }
-
-            item.CountText = UiFactory.CreateText("count", root, "", SmallFontSize, TextBrown);
-            place(item.CountText.rectTransform, Vector2.one, new Vector2(-10f, -8f));
-            item.CountText.alignment = TextAlignmentOptions.TopRight;
-            item.CountText.rectTransform.sizeDelta = new Vector2(80f, 30f);
-
-            TMP_Text newText = UiFactory.CreateText("new", root, "NEW", SmallFontSize, NewColor);
-            place(newText.rectTransform, new Vector2(0f, 1f), new Vector2(10f, -8f));
-            newText.alignment = TextAlignmentOptions.TopLeft;
-            newText.rectTransform.sizeDelta = new Vector2(80f, 30f);
-            item.NewBadge = newText.gameObject;
-
-            TMP_Text equipped = UiFactory.CreateText("equipped", root, TextLocalizer.Get("PUG_EQUIPPED"), SmallFontSize, EquippedColor);
-            place(equipped.rectTransform, Vector2.one, new Vector2(-10f, -8f));
-            equipped.alignment = TextAlignmentOptions.TopRight;
-            equipped.rectTransform.sizeDelta = new Vector2(100f, 30f);
-            item.EquippedBadge = equipped.gameObject;
-
-            TMP_Text owned = UiFactory.CreateText("owned", root, TextLocalizer.Get("PUG_OWNED"), PriceFontSize, TextBrown);
-            place(owned.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 24f));
-            owned.rectTransform.sizeDelta = new Vector2(180f, 32f);
-            item.OwnedLabel = owned.gameObject;
-
-            // とくべつな子は交換できない
-            if (!_character.IsForSale)
-            {
-                TMP_Text secret = UiFactory.CreateText("secret", root, TextLocalizer.Get("PUG_NOT_FOR_SALE"), SmallFontSize, NewColor);
-                place(secret.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 24f));
-                secret.rectTransform.sizeDelta = new Vector2(180f, 30f);
-                item.SecretLabel = secret.gameObject;
-                return item;
-            }
-
-            // 交換ボタン（ほねのアイコン＋値段）
-            Image buttonImage = UiFactory.CreateImage("price", root, ResourceManager.Instance.Load<Sprite>(ButtonPath), PriceButtonSize);
-            buttonImage.type = Image.Type.Sliced;
-            buttonImage.preserveAspect = false;
-            buttonImage.raycastTarget = true;
-            place(buttonImage.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 12f));
-            Image bone = UiFactory.CreateImage("bone", buttonImage.transform, ResourceManager.Instance.Load<Sprite>(BonePath), new Vector2(40f, 24f));
-            place(bone.rectTransform, new Vector2(0f, 0.5f), new Vector2(12f, 3f));
-            TMP_Text price = UiFactory.CreateText("label", buttonImage.transform, _character.Price.ToString(), PriceFontSize, TextBrown);
-            stretch(price.rectTransform, 0f);
-            price.rectTransform.offsetMin = new Vector2(48f, 0f);
-            price.rectTransform.anchoredPosition += new Vector2(0f, 3f);
-
-            var button = buttonImage.gameObject.AddComponent<MumuButton>();
-            button.targetGraphic = buttonImage;
-            int id = _character.Id;
-            button.SetOnClick(() => onClickPriceButton(id));
-            item.PriceButton = button;
-            item.PriceButtonImage = buttonImage;
-            return item;
+            PugBookScrollItem view = Instantiate(scrollItemPrefab, content, false);
+            view.Setup(_character, onClickPriceButton, onClickOwnedItem);
+            return new Item { View = view };
         }
 
         /// <summary>
@@ -319,6 +178,15 @@ namespace mumu
         /// </summary>
         /// <param name="_characterId"></param>
         private void onClickPriceButton(int _characterId)
+        {
+            showActionAsync(_characterId).Forget();
+        }
+
+        /// <summary>
+        /// 持っている子のカード押下時の処理
+        /// </summary>
+        /// <param name="_characterId"></param>
+        private void onClickOwnedItem(int _characterId)
         {
             showActionAsync(_characterId).Forget();
         }
@@ -335,14 +203,37 @@ namespace mumu
                 return;
             }
             bool isOwned = PugCollection.IsOwned(_characterId);
+            bool isEquipped = _characterId == PugCollection.EquippedId;
             bool canExchange = character.IsForSale && !isOwned && SaveDataManager.Data.bones >= character.Price;
             bool canGarden = isOwned && !PugCollection.IsInGarden(_characterId) && PugCollection.GardenIds.Count < UserSaveData.MaxGarden;
+            string firstLabel = TextLocalizer.Get(isOwned
+                ? (isEquipped ? "PUG_UNEQUIP" : "PUG_EQUIP")
+                : "PUG_EXCHANGE");
+            bool firstEnabled = isOwned || canExchange;
+            System.Action firstAction = isOwned
+                ? () => equipCharacter(_characterId)
+                : () => confirmExchangeAsync(_characterId).Forget();
 
             var param = new ConfirmParam(
                 character.Name,
-                TextLocalizer.Get("PUG_EXCHANGE"), canExchange, () => confirmExchangeAsync(_characterId).Forget(),
+                firstLabel, firstEnabled, firstAction,
                 TextLocalizer.Get("PUG_TO_GARDEN"), canGarden, () => addToGarden(_characterId));
             await PopupManager.Instance.Open(ePopup.Confirm, param, destroyCancellationToken);
+        }
+
+        /// <summary>
+        /// 確認後に連れていく子を切り替える
+        /// </summary>
+        /// <param name="_characterId"></param>
+        private void equipCharacter(int _characterId)
+        {
+            PugCollection.Equip(_characterId == PugCollection.EquippedId ? PugCollection.DefaultPlayerId : _characterId);
+            refresh();
+            SoundManager sound = SoundManager.Instance;
+            if (sound != null)
+            {
+                sound.PlaySe(eSe.Checkpoint);
+            }
         }
 
         /// <summary>
@@ -407,29 +298,5 @@ namespace mumu
             }
         }
 
-        /// <summary>
-        /// アンカーと pivot を同じ所にして置く
-        /// </summary>
-        /// <param name="_rect"></param>
-        /// <param name="_anchor"></param>
-        /// <param name="_position"></param>
-        private static void place(RectTransform _rect, Vector2 _anchor, Vector2 _position)
-        {
-            _rect.anchorMin = _rect.anchorMax = _rect.pivot = _anchor;
-            _rect.anchoredPosition = _position;
-        }
-
-        /// <summary>
-        /// 親いっぱい（_inset だけ内側）
-        /// </summary>
-        /// <param name="_rect"></param>
-        /// <param name="_inset"></param>
-        private static void stretch(RectTransform _rect, float _inset)
-        {
-            _rect.anchorMin = Vector2.zero;
-            _rect.anchorMax = Vector2.one;
-            _rect.offsetMin = new Vector2(_inset, _inset);
-            _rect.offsetMax = new Vector2(-_inset, -_inset);
-        }
     }
 }
