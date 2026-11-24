@@ -11,7 +11,8 @@ namespace mumu
     public static class EditorUiBuilder
     {
         public const string UiFolder = "Assets/mumu/Resources/Sprites/UI/";
-        private const string FontPath = "Assets/mumu/Fonts/DotGothic16/DotGothic16 TMP.asset";
+        private const string FontPath = "Assets/mumu/Fonts/mplus-1m-medium SDF.asset";
+        private const string FontMaterialPath = "Assets/mumu/Fonts/mplus-1m-medium SDF_001.mat";
 
         public static readonly Color TextBrown = new Color(0.29f, 0.17f, 0.06f);
         public static readonly Color SettingsColor = new Color(0.42f, 0.78f, 0.64f);
@@ -152,7 +153,7 @@ namespace mumu
             if (font != null)
             {
                 text.font = font;
-                text.fontSharedMaterial = font.material;
+                text.fontSharedMaterial = AssetDatabase.LoadAssetAtPath<Material>(FontMaterialPath);
             }
             text.text = _text;
             text.fontSize = _size;

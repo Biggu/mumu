@@ -50,6 +50,8 @@ namespace mumu
         public int hintStage = 0;
         /// <summary>ヒントの乱数の seed（同じ seed なら同じヒント）</summary>
         public int hintSeed = 0;
+        /// <summary>今のヒントのステージで使った回数（hintStage のステージだけ有効）</summary>
+        public int hintUses = 0;
         /// <summary>テーマのおはなしを見たテーマ番号（テーマの最後のステージをクリアした時に1回だけ見せる）</summary>
         public List<int> seenThemeStories = new List<int>();
         /// <summary>クリア後の最初におにわを開いた時に、ランダムな子が喜ぶ（おにわで1回だけ）</summary>

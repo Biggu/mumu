@@ -46,10 +46,17 @@ namespace mumu
         private static readonly float[] SizeCurve = { 5f, 14f, 18f, 20f };
         /// <summary>通れるマスのうち経路にする割合（上がるほど難しい）</summary>
         private static readonly float[] WaypointCurve = { 0.6f, 0.8f, 0.87f, 0.9f };
-        /// <summary>通れるマスのうち自由に通れるマスの割合（Lv40 以降は 0）</summary>
-        private static readonly float[] FreeCurve = { 0.1f, 0.02f, 0f, 0f };
+        /// <summary>通れないブロックの割合（レベル1〜10 で段階的に増える。10 以上は従来どおり）</summary>
+        private static readonly int[] ObstructCurveLevels = { 1, 10, 20, 40, 50 };
+        private static readonly float[] ObstructCurve = { 0.15f, 0.243f, 0.18f, 0.13f, 0.10f };
         /// <summary>Goal 解放に必要な手数（経路数に対する割合）</summary>
-        private static readonly float[] GoalUnlockCurve = { 0.6f, 0.72f, 0.84f, 0.9f };
+        /// <summary>Goal 解放の割合（テーマ（10ステージ）の中で、1ステージ目 80% → 9ステージ目 95%）</summary>
+        private const float GoalUnlockMin = 0.8f;
+        private const float GoalUnlockMax = 0.95f;
+        /// <summary>テーマの中のステージ数（10 の最後はボーナスステージ）</summary>
+        public const int StepsPerBlock = 10;
+        /// <summary>Goal 解放の割合を上げるステージ数（1〜9ステージ目）</summary>
+        private const int GoalUnlockSteps = 9;
 
         private const int MinSize = 5;
 
@@ -81,13 +88,33 @@ namespace mumu
         }
 
         /// <summary>
+        /// 指定した基準レベルでの難易度カーブの値（基準レベルの間は線形）
+        /// </summary>
+        /// <param name="_difficulty"></param>
+        /// <param name="_levels"></param>
+        /// <param name="_values"></param>
+        private static float evaluateOn(float _difficulty, int[] _levels, float[] _values)
+        {
+            float level = Mathf.Clamp(_difficulty, MinDifficulty, MaxDifficulty);
+            for (int i = 1; i < _levels.Length; i++)
+            {
+                if (level <= _levels[i])
+                {
+                    float t = (level - _levels[i - 1]) / (float)(_levels[i] - _levels[i - 1]);
+                    return Mathf.Lerp(_values[i - 1], _values[i], t);
+                }
+            }
+            return _values[_values.Length - 1];
+        }
+
+        /// <summary>
         /// 難易度カーブの値（基準レベルの間は線形）
         /// </summary>
         /// <param name="_difficulty"></param>
         /// <param name="_values"></param>
-        private static float evaluate(int _difficulty, float[] _values)
+        private static float evaluate(float _difficulty, float[] _values)
         {
-            int level = Mathf.Clamp(_difficulty, MinDifficulty, MaxDifficulty);
+            float level = Mathf.Clamp(_difficulty, MinDifficulty, MaxDifficulty);
             for (int i = 1; i < CurveLevels.Length; i++)
             {
                 if (level <= CurveLevels[i])
@@ -104,7 +131,7 @@ namespace mumu
         /// </summary>
         /// <param name="_difficulty"></param>
         /// <param name="_pattern"></param>
-        public static int GetSize(int _difficulty, eMapPattern _pattern)
+        public static int GetSize(float _difficulty, eMapPattern _pattern)
         {
             int size = Mathf.RoundToInt(evaluate(_difficulty, SizeCurve));
             return Mathf.Max(size, getMinSize(_pattern));
@@ -114,7 +141,11 @@ namespace mumu
         /// Goal 解放に必要な手数の割合（経路数に対して）
         /// </summary>
         /// <param name="_difficulty"></param>
-        public static float GetGoalUnlockRate(int _difficulty) => evaluate(_difficulty, GoalUnlockCurve);
+        public static float GetGoalUnlockRate(int _step)
+        {
+            float t = Mathf.Clamp(_step, 0, GoalUnlockSteps - 1) / (float)(GoalUnlockSteps - 1);
+            return Mathf.Lerp(GoalUnlockMin, GoalUnlockMax, t);
+        }
 
         /// <summary>
         /// 形ごとの最低サイズ
@@ -147,13 +178,19 @@ namespace mumu
         /// 通れるマスのうち経路にする割合
         /// </summary>
         /// <param name="_difficulty"></param>
-        public static float GetWaypointRate(int _difficulty) => evaluate(_difficulty, WaypointCurve);
+        public static float GetWaypointRate(float _difficulty) => evaluate(_difficulty, WaypointCurve);
 
         /// <summary>
         /// 通れるマスのうち通れないブロックにする割合（経路・自由マスの残り）
         /// </summary>
         /// <param name="_difficulty"></param>
-        public static float GetObstructRate(int _difficulty) => Mathf.Max(0f, 1f - GetWaypointRate(_difficulty) - evaluate(_difficulty, FreeCurve));
+        public static float GetObstructRate(float _difficulty) => evaluateOn(_difficulty, ObstructCurveLevels, ObstructCurve);
+
+        /// <summary>
+        /// 通れるマスのうち自由に通れるマスの割合（経路と通れないブロックの残り）
+        /// </summary>
+        /// <param name="_difficulty"></param>
+        public static float GetFreeRate(float _difficulty) => Mathf.Max(0f, 1f - GetWaypointRate(_difficulty) - GetObstructRate(_difficulty));
 
         /// <summary>
         /// 形ごとの縦横のマス数
@@ -179,10 +216,11 @@ namespace mumu
         /// <param name="_pattern"></param>
         /// <param name="_seed"></param>
         /// <param name="_isLogEnabled"></param>
-        public static Result Generate(MapData _mapData, int _difficulty, eMapPattern _pattern, int _seed, bool _isLogEnabled = true, GimmickSettings _gimmicks = default)
+        public static Result Generate(MapData _mapData, float _difficulty, eMapPattern _pattern, int _seed, bool _isLogEnabled = true, GimmickSettings _gimmicks = default, int _fixedSize = 0)
         {
             var random = new System.Random(_seed);
-            Vector2Int size = GetDimensions(_pattern, GetSize(_difficulty, _pattern));
+            // 指定があれば、形に関係なく正方形の枠（ボーナスステージは 10×10）
+            Vector2Int size = _fixedSize > 0 ? new Vector2Int(_fixedSize, _fixedSize) : GetDimensions(_pattern, GetSize(_difficulty, _pattern));
             int width = size.x;
             int height = size.y;
 
@@ -207,11 +245,11 @@ namespace mumu
             List<Vector2Int> path = MapPath.CreatePath(cells, moveable, Mathf.CeilToInt(moveable.Count * GetWaypointRate(_difficulty)), random);
 
             write(_mapData, cells, path);
-            _mapData.difficulty = Mathf.Clamp(_difficulty, MinDifficulty, MaxDifficulty);
+            _mapData.difficulty = Mathf.FloorToInt(Mathf.Clamp(_difficulty, MinDifficulty, MaxDifficulty));
             result.Waypoints = Mathf.Max(0, path.Count - 2);
 
             // 自由マスは決めた割合だけ残し、経路が足りない分も含めて残りは通れないブロック
-            int freeCount = Mathf.RoundToInt(moveable.Count * evaluate(_difficulty, FreeCurve));
+            int freeCount = Mathf.RoundToInt(moveable.Count * GetFreeRate(_difficulty));
             result.Obstructs = MapObstruct.Place(_mapData, cells, path, Mathf.Max(0, moveable.Count - path.Count - freeCount), random);
             result.Free = result.Moveable - path.Count - result.Obstructs;
             // ギミックは経路を決めた後に、設計した経路に合うマスだけへ置く（seed を変えて経路の結果は変えない）

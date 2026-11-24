@@ -22,7 +22,7 @@ namespace mumu
                 {
                     return current;
                 }
-                current = Resources.Load<MapInputSettings>(AssetPath);
+                current = ResourceManager.LoadResource<MapInputSettings>(AssetPath, false);
                 if (current != null)
                 {
                     return current;
@@ -35,6 +35,8 @@ namespace mumu
         [Header("ドラッグ")]
         [Tooltip("ドラッグで1マス進むごとの待ち時間（秒）。0 で待たない（速い）")]
         public float DragDelayPerBlock = 0.2f;
+        [Tooltip("ドラッグで経路を1マス戻るごとの待ち時間（秒）。進む時の待ち時間とは別。0 で待たない")]
+        public float DragRewindDelayPerBlock = 0.35f;
         [Tooltip("先端からこのマス数以内なら、押してもドラッグを始められる")]
         public int NoDragRange = 2;
         [Tooltip("ドラッグで1マス進むのに必要な指の移動（マス幅に対する割合）")]
@@ -81,5 +83,18 @@ namespace mumu
         public float DoubleTapInterval = 0.35f;
         [Tooltip("ダブルタップと見なす2回の距離（ピクセル）")]
         public float DoubleTapDistance = 80f;
+
+        [Header("タッチパッド（経路をドラッグしている間、指の下に出る丸）")]
+        [Tooltip("丸の大きさ（ピクセル）")]
+        public float TouchPadSize = 60f;
+        [Tooltip("つまみが、押した場所（輪の中心）から動ける最大の距離（ピクセル）。輪の半径と同じにする")]
+        public float TouchPadMaxDistance = 30f;
+        [Tooltip("丸の透明度（0 = 見えない、1 = はっきり）")]
+        [Range(0f, 1f)]
+        public float TouchPadAlpha = 0.25f;
+        [Tooltip("タッチパッドを出すか（オフにすると何も出ない）")]
+        public bool TouchPadEnabled = true;
+        [Tooltip("画面の左下から、タッチパッドまでの余白（ピクセル）")]
+        public float TouchPadMargin = 40f;
     }
 }

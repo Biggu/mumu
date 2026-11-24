@@ -22,6 +22,8 @@ namespace mumu
         public int Height;
         /// <summary>難易度</summary>
         public int Difficulty = 1;
+        /// <summary>ボーナスステージか（一度だけ遊べる）</summary>
+        public bool IsBonus;
     }
 
     /// <summary>
@@ -37,7 +39,7 @@ namespace mumu
         public const string AssetFolder = "Assets/mumu/Resources/" + ResourceFolder;
 
         private const string ListName = "map_list";
-        private static readonly string[] ListHeader = { "id", "name", "themeId", "width", "height", "difficulty" };
+        private static readonly string[] ListHeader = { "id", "name", "themeId", "width", "height", "difficulty", "bonus" };
         private const int ListRequiredColumns = 5;
         private static readonly string[] MapHeader = { "x", "y", "type", "waypoint", "gimmick" };
         /// <summary>gimmick 列の区切り</summary>
@@ -73,7 +75,7 @@ namespace mumu
         /// </summary>
         public static List<MapInfo> LoadList()
         {
-            var asset = Resources.Load<TextAsset>(GetListResourcePath());
+            var asset = ResourceManager.LoadResource<TextAsset>(GetListResourcePath());
             if (asset == null)
             {
                 Debug.LogError($"[MapCsv] Map list not found: {GetListResourcePath()}");
@@ -97,7 +99,7 @@ namespace mumu
         /// <param name="_info"></param>
         public static MapData LoadMap(MapInfo _info)
         {
-            var asset = Resources.Load<TextAsset>(GetMapResourcePath(_info.Id));
+            var asset = ResourceManager.LoadResource<TextAsset>(GetMapResourcePath(_info.Id));
             if (asset == null)
             {
                 Debug.LogError($"[MapCsv] Map not found: {GetMapResourcePath(_info.Id)}");
@@ -131,6 +133,7 @@ namespace mumu
                     Width = parseInt(row[3], 0),
                     Height = parseInt(row[4], 0),
                     Difficulty = row.Length > 5 ? parseInt(row[5], 1) : 1,
+                    IsBonus = row.Length > 6 && parseInt(row[6], 0) == 1,
                 });
             }
             return list;
@@ -146,7 +149,7 @@ namespace mumu
             builder.Append(CsvUtility.ToLine(ListHeader)).Append('\n');
             foreach (MapInfo info in _list)
             {
-                builder.Append(CsvUtility.ToLine(info.Id, info.Name, info.ThemeId, info.Width, info.Height, info.Difficulty)).Append('\n');
+                builder.Append(CsvUtility.ToLine(info.Id, info.Name, info.ThemeId, info.Width, info.Height, info.Difficulty, info.IsBonus ? 1 : 0)).Append('\n');
             }
             return builder.ToString();
         }
@@ -164,6 +167,8 @@ namespace mumu
             mapData.mapName = _info.Name;
             mapData.themeId = _info.ThemeId;
             mapData.difficulty = _info.Difficulty;
+            mapData.isBonus = _info.IsBonus;
+            mapData.goalStep = (_info.Id - 1) % MapGenerator.StepsPerBlock;
             mapData.Initialize(Mathf.Max(1, _info.Width), Mathf.Max(1, _info.Height));
 
             List<string[]> rows = CsvUtility.Parse(_text);
@@ -240,6 +245,7 @@ namespace mumu
                 Width = _mapData.width,
                 Height = _mapData.height,
                 Difficulty = _mapData.difficulty,
+                IsBonus = _mapData.isBonus,
             };
         }
 

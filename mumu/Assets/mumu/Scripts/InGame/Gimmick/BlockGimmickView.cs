@@ -11,6 +11,8 @@ namespace mumu
     public class BlockGimmickView
     {
         private const float RouteIconSize = 34f;
+        /// <summary>霧の大きさ（上面を覆う）</summary>
+        private const float FogSize = 60f;
         private const float GimmickPunchAmount = 0.4f;
         private const float GimmickPunchDuration = 0.25f;
         private const float KeySize = 34f;
@@ -33,6 +35,8 @@ namespace mumu
 
         /// <summary>上面に寝かせたギミックのアイコン（やじるし・まがる・まっすぐ・ワープ・こわれる橋）</summary>
         private Image routeIcon = null;
+        /// <summary>上面にかぶせる霧（経路が近づくと消える）</summary>
+        private Image fogIcon = null;
         /// <summary>立っている扉</summary>
         private Image gateIcon = null;
         private bool isGateOpen = false;
@@ -67,8 +71,9 @@ namespace mumu
             int color = GimmickUtility.GetColorIndex(exclusive);
             if (GimmickUtility.IsRoute(exclusive))
             {
-                Image icon = createPlaneIcon(GimmickUtility.IsArrow(exclusive) ? "gimmick_arrow" : (exclusive == eBlockSubType.Turn ? "gimmick_turn" : "gimmick_straight"), Color.white);
-                if (GimmickUtility.IsArrow(exclusive))
+                string routeSprite = GimmickUtility.IsOneWay(exclusive) ? "gimmick_oneway" : GimmickUtility.IsArrow(exclusive) ? "gimmick_arrow" : (exclusive == eBlockSubType.Turn ? "gimmick_turn" : "gimmick_straight");
+                Image icon = createPlaneIcon(routeSprite, Color.white);
+                if (GimmickUtility.IsArrowLike(exclusive))
                 {
                     icon.rectTransform.localRotation = Quaternion.Euler(0f, 0f, GridUtility.GetPlaneAngle(GimmickUtility.GetArrowDirection(exclusive)));
                 }
@@ -103,6 +108,32 @@ namespace mumu
             {
                 floating.Add("key", "gimmick_key", KeySize, GimmickUtility.Colors[GimmickUtility.GetColorIndex(key)], hasTreasure ? FloatingSpacing : 0f, _sortIndex, visualRoot);
             }
+
+            // スイッチはカギと同じく浮かべる（同じマスにカギがある時は置かない想定）
+            eBlockSubType sw = GimmickUtility.GetSwitch(_subTypes);
+            if (sw != eBlockSubType.None)
+            {
+                floating.Add("switch", "gimmick_switch", KeySize, GimmickUtility.Colors[GimmickUtility.GetColorIndex(sw)], 0f, _sortIndex, visualRoot);
+            }
+
+            // 霧は上面に被せる（最初は隠す。経路が近づいたら SetFogged で消す）
+            if (GimmickUtility.GetFog(_subTypes) != eBlockSubType.None)
+            {
+                fogIcon = createPlaneIcon("gimmick_fog", Color.white, FogSize, false);
+            }
+        }
+
+        /// <summary>
+        /// 霧を出す・消す（経路が近づくと消える）
+        /// </summary>
+        /// <param name="_isFogged"></param>
+        public void SetFogged(bool _isFogged)
+        {
+            if (fogIcon == null || fogIcon.gameObject.activeSelf == _isFogged)
+            {
+                return;
+            }
+            fogIcon.gameObject.SetActive(_isFogged);
         }
 
         /// <summary>
@@ -173,7 +204,7 @@ namespace mumu
         /// </summary>
         /// <param name="_sprite"></param>
         /// <param name="_color"></param>
-        private Image createPlaneIcon(string _sprite, Color _color)
+        private Image createPlaneIcon(string _sprite, Color _color, float _size = RouteIconSize, bool _isAnimated = true)
         {
             var plane = new GameObject("gimmickPlane", typeof(RectTransform));
             var planeRect = (RectTransform)plane.transform;
@@ -186,7 +217,7 @@ namespace mumu
             planeRect.localScale = lineRect.localScale;
             planeRect.sizeDelta = Vector2.zero;
 
-            Image icon = GimmickSprites.CreateImage("routeIcon", planeRect, _sprite, RouteIconSize);
+            Image icon = GimmickSprites.CreateImage("routeIcon", planeRect, _sprite, _size, _isAnimated);
             icon.color = _color;
             return icon;
         }

@@ -6,7 +6,7 @@
 SE（効果音）
 ================================================================
 se_000001 click sound pixel style 0.2sec
-se_000002 popup open sound pixel style cheerful 0.3sec   ※コードでは今 Bark1（おにわの子が喜ぶ）に使用中。下の注意を見てください
+se_000002 bark sound pixel style cheerful 0.3sec（おにわでパグを押した時の吠える声。コード: eSe.Bark1）
 se_000003 bark sound pixel style short 0.3sec（進めない時・Bark2）
 se_000004 block gain sound pixel style soft pop 0.15sec（1マス進めた）
 se_000005 block gain2 sound pixel style bright sparkle pop 0.3sec（チェックポイント・Goal 解放）
@@ -25,7 +25,7 @@ se_000017 fanfare sound pixel style short crown 1.5sec（PERFECT の王冠）
 se_000018 chime sound pixel style soft bell 0.6sec（テーマのおはなし）
 se_000019 notice ping sound pixel style small blip 0.2sec（通知）
 se_000020 toast pop sound pixel style small pop 0.15sec（画面下のお知らせ）
-se_000021 popup open sound pixel style cheerful 0.3sec（ダイアログが開く・se_000002 と同じ内容。どちらを使うか決めてください）
+se_000021 popup open sound pixel style cheerful 0.3sec（ダイアログが開く。コード: eSe.PopupOpen）
 se_000022 popup close sound pixel style soft 0.2sec（ダイアログが閉じる）
 se_000023 hint chime sound pixel style twinkle ping 0.5sec（ヒントを使った）
 se_000024 snore sound pixel style very soft 1.0sec（パグが寝る。とても小さく）
@@ -34,9 +34,25 @@ se_000026 page flip sound pixel style paper flip 0.4sec（ステージマップ�
 se_000027 footstep sound pixel style short step 0.15sec（男の子が歩く）
 se_000028 alert chime sound pixel style gentle warning 0.6sec（今日のおさんぽが終わった）
 
-※ se_000002 の注意
-  メモの例では se_000002 = popup open。今のコードでは se_000002 は「おにわの子が喜ぶ（吠える）」に使っている。
-  どちらにするか決めてください（メモどおりにするならコードの番号を変えます）。
+--- 追加の効果音（仮。今は既存の音のコピー。同じ名前で作り直してください） ---
+se_000029 chest wood pickup sound pixel style small wooden knock 0.3sec（木の宝箱を拾った）  仮: se_000011 のコピー
+se_000030 chest silver pickup sound pixel style bright metal clink 0.3sec（銀の宝箱を拾った）  仮: se_000011 のコピー
+se_000031 chest gold pickup sound pixel style rich bell coin shimmer 0.5sec（金の宝箱を拾った。豪華に）  仮: se_000016 のコピー
+se_000032 chest combo chime sound pixel style rising ping 0.2sec（宝箱を続けて拾うと、音が高くなる。1回ごとに高く）  仮: se_000004 のコピー
+se_000033 bonus stage enter sound pixel style shimmering fanfare 1.0sec（ボーナスステージが始まる）  仮: se_000015 のコピー
+se_000034 bonus clear coin rain sound pixel style many coins falling 1.2sec（ボーナスステージをクリア。コインが降る）  仮: se_000016 のコピー
+se_000035 hint reveal step sound pixel style light twinkle 0.3sec（ヒントを使うたびに、少し高い音）  仮: se_000023 のコピー
+se_000036 locked stage tap sound pixel style soft negative boop 0.2sec（鍵のかかったステージを押した）  仮: se_000003 のコピー
+se_000037 rare pug join fanfare sound pixel style big happy fanfare 2.0sec（レアなパグが仲間になった）  仮: se_000017 のコピー
+se_000038 daily stroll start sound pixel style short trumpet call 0.6sec（今日のおさんぽを始める）  仮: se_000019 のコピー
+se_000039 new theme whoosh sound pixel style soft swoosh with chime 0.8sec（新しいテーマが始まる）  仮: se_000013 のコピー
+se_000040 replay start sound pixel style click clink 0.2sec（クリアしたステージをもう一度遊ぶ）  仮: se_000001 のコピー
+se_000041 rewind confirm open sound pixel style gentle question chime 0.3sec（多く戻る時の確認が出る）  仮: se_000021 のコピー
+
+※ se_000002 と se_000021 は分けた（決定）
+  se_000002 = 吠える（おにわでパグを押した時。eSe.Bark1）
+  se_000021 = ダイアログが開く（eSe.PopupOpen）
+  同じ音の内容でも、名前が違うので別々に作り直せます。
 
 ================================================================
 BGM（音楽）: 名前 / 長さ / 雰囲気（すべてループ）
@@ -75,6 +91,12 @@ bgm_030 night theme11 village slower softer loop 50sec（夜の村。テーマ11
 bgm_031 night theme12 sea slower softer loop 55sec（夜の海。テーマ12の曲をゆっくり静かにした版）
 bgm_032 night theme13 ice slower softer loop 50sec（夜の氷。テーマ13の曲をゆっくり静かにした版）
 bgm_033 night theme14 office slower softer loop 40sec（夜のオフィス。テーマ14の曲をゆっくり静かにした版）
+bgm_040 bonus gold rich sparkle loop 45sec（ボーナスステージ。金色の、きらびやかで豪華な曲）
+
+※ 仮の音（コピー）の一覧（同じ名前で本物の曲に差し替えてください）
+  bgm_015〜019 … bgm_001〜005 のコピー（テーマ 15〜19）
+  bgm_020〜033 … bgm_001〜014 のコピー（夜のテーマ。昼の曲のコピー）
+  bgm_040 … bgm_000 のコピー（ボーナス。金色の曲を作ったら差し替え）
 
 ※ タイトルは bgm_000 を使う（コード TitleBgmId = 0）。bgm_999 は使わなくなった（ファイルは残してあるので、削除してよい）
 ※ 曲のないテーマ（ファイルがない bgm_NNN）は bgm_000（タイトルの曲）になる。

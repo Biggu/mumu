@@ -40,6 +40,9 @@ namespace mumu
         public const string KeyKey = "key";
         public const string WarpKey = "warp";
         public const string CrumbleKey = "crumble";
+        public const string FogKey = "fog";
+        public const string OneWayKey = "oneway";
+        public const string SwitchKey = "switch";
         private const string SpriteFolder = "Sprites/Common/";
 
         private static List<GimmickData> gimmicks = null;
@@ -70,13 +73,25 @@ namespace mumu
         /// <param name="_subType"></param>
         public static string GetKey(eBlockSubType _subType)
         {
+            if (GimmickUtility.IsOneWay(_subType))
+            {
+                return OneWayKey;
+            }
             if (GimmickUtility.IsArrow(_subType))
             {
                 return ArrowKey;
             }
+            if (GimmickUtility.IsSwitch(_subType))
+            {
+                return SwitchKey;
+            }
             if (GimmickUtility.IsKey(_subType) || GimmickUtility.IsGate(_subType))
             {
                 return KeyKey;
+            }
+            if (GimmickUtility.IsFog(_subType))
+            {
+                return FogKey;
             }
             if (GimmickUtility.IsWarpIn(_subType) || GimmickUtility.IsWarpOut(_subType))
             {
@@ -101,7 +116,12 @@ namespace mumu
         /// <param name="_gimmick"></param>
         public static Sprite LoadIcon(GimmickData _gimmick)
         {
-            return _gimmick != null ? ResourceManager.Instance.Load<Sprite>(SpriteFolder + _gimmick.Sprite) : null;
+            if (_gimmick == null)
+            {
+                return null;
+            }
+            Sprite[] frames = GimmickSprites.LoadFrames(_gimmick.Sprite);
+            return frames.Length > 0 ? frames[0] : null;
         }
 
         /// <summary>
@@ -190,7 +210,7 @@ namespace mumu
             }
 
             gimmicks = new List<GimmickData>();
-            var asset = Resources.Load<TextAsset>($"{CharacterMaster.Folder}/gimmick");
+            var asset = ResourceManager.LoadResource<TextAsset>($"{CharacterMaster.Folder}/gimmick");
             if (asset == null)
             {
                 Debug.LogError($"[GimmickMaster] CSV not found: {CharacterMaster.Folder}/gimmick");

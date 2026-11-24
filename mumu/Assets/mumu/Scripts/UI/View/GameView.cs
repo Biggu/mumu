@@ -31,8 +31,8 @@ namespace mumu
         private const float RewardDialogDelay = 0.6f;
         /// <summary>もどらずクリアのボーナス（ほね、初めて達成した時だけ）</summary>
         private const int MissionBonusBones = 10;
-        /// <summary>ヒントのほね（固定）</summary>
-        public const int HintCost = 10;
+        /// <summary>ヒント1回分のほね（今回が何回目かを掛けた分がかかる。1回目 5、2回目 10 …）</summary>
+        public const int HintCost = 5;
         /// <summary>大きな★の大きさ（★3つを1つにまとめる時）</summary>
         private const float BigStarSize = 96f;
 
@@ -42,6 +42,13 @@ namespace mumu
         /// <summary>マップと背景の親（ドラッグ・ピンチで移動拡大）</summary>
         [SerializeField]
         private RectTransform mapGroup = null;
+        /// <summary>クリアの演出中か（画面を押したら飛ばせる）</summary>
+        private bool isClearing = false;
+        /// <summary>クリアの演出の待ち時間を、画面を押して飛ばしたか</summary>
+        private bool isClearSkipRequested = false;
+        /// <summary>1つ戻すボタン（右下。Prefab で置いて割り当てる）</summary>
+        [SerializeField]
+        private MumuButton undoButton = null;
         /// <summary>背景</summary>
         [SerializeField]
         private Image bgImage = null;
@@ -92,6 +99,10 @@ namespace mumu
         private int litStarCount = 0;
         /// <summary>ポップアップ表示中か（重ねて開かない）</summary>
         private bool isPopupOpen = false;
+        /// <summary>直前に遊んだステージのテーマ（テーマが変わった時の音に使う）</summary>
+        private static int lastThemeId = 0;
+        /// <summary>このティア以上のパグが仲間になった時は、ファンファーレ</summary>
+        private const int RareJoinTier = 4;
 
         /// <summary>
         /// 破棄時に CSV から作ったマップデータを破棄
@@ -117,13 +128,25 @@ namespace mumu
                 map.SetOnPathChanged(onPathChanged);
                 map.SetOnCleared(onCleared);
                 map.SetOnMessage(onMessage);
+                map.SetOnRewindConfirm(onRewindConfirm);
+                undoButton.SetOnClick(onClickUndo);
+                refreshUndo();
                 setupHintButton();
-                if (isHintActive())
+                if (usedHints() > 0)
                 {
-                    map.ShowHint(SaveDataManager.Data.hintSeed);
+                    map.ShowHint(usedHints());
                 }
                 refreshHint();
                 ThemeBackground.Show(bgImage, map.Sprites);
+                if (map.MapData.isBonus)
+                {
+                    CommonUtility.PlaySe(eSe.BonusEnter);
+                }
+                if (lastThemeId != 0 && lastThemeId != map.MapData.themeId)
+                {
+                    CommonUtility.PlaySe(eSe.ThemeWhoosh);
+                }
+                lastThemeId = map.MapData.themeId;
                 SoundManager sound = SoundManager.Instance;
                 if (sound != null)
                 {
@@ -305,6 +328,38 @@ namespace mumu
         }
 
         /// <summary>
+        /// 多く戻る時の確認（はいなら戻す）
+        /// </summary>
+        /// <param name="_cell"></param>
+        private void onRewindConfirm(Vector2Int _cell)
+        {
+            confirmRewindAsync(_cell).Forget();
+        }
+
+        /// <summary>
+        /// 何マス戻るかを出して、はいなら戻す
+        /// </summary>
+        /// <param name="_cell"></param>
+        private async UniTaskVoid confirmRewindAsync(Vector2Int _cell)
+        {
+            if (isPopupOpen)
+            {
+                return;
+            }
+            isPopupOpen = true;
+            int count = map.Path.GetRewindCount(_cell);
+            CommonUtility.PlaySe(eSe.RewindConfirm);
+            map.SetRewindPreview(_cell, true);
+            bool isYes = await PopupManager.Instance.Open(ePopup.Alert, new AlertParam(TextLocalizer.Get("CONFIRM_TITLE"), TextLocalizer.Get("CONFIRM_REWIND", count), true), destroyCancellationToken);
+            map.SetRewindPreview(_cell, false);
+            isPopupOpen = false;
+            if (isYes)
+            {
+                map.ConfirmRewind(_cell);
+            }
+        }
+
+        /// <summary>
         /// はい／いいえ で確認して、はいなら実行
         /// </summary>
         /// <param name="_bodyKey"></param>
@@ -335,6 +390,28 @@ namespace mumu
             }
             updateGauge();
             updateBones();
+            refreshUndo();
+        }
+
+        /// <summary>
+        /// 1つ戻すボタンを、戻せる時だけ押せるようにする
+        /// </summary>
+        private void refreshUndo()
+        {
+            undoButton.interactable = map.CanUndo && !isPopupOpen;
+        }
+
+        /// <summary>
+        /// 1つ戻すボタン押下時の処理
+        /// </summary>
+        private void onClickUndo()
+        {
+            if (isPopupOpen || map == null)
+            {
+                return;
+            }
+            map.UndoLastStep();
+            refreshUndo();
         }
 
         /// <summary>
@@ -342,7 +419,43 @@ namespace mumu
         /// </summary>
         private void onCleared()
         {
+            if (map.MapData.isBonus)
+            {
+                CommonUtility.PlaySe(eSe.BonusClear);
+            }
             playClearAsync().Forget();
+        }
+
+        /// <summary>
+        /// クリアの演出中に画面を押したら、待ち時間を飛ばす
+        /// </summary>
+        private void Update()
+        {
+            bool isTapped = Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began);
+            if (isClearing && isTapped)
+            {
+                isClearSkipRequested = true;
+            }
+        }
+
+        /// <summary>
+        /// 指定の秒数待つ。画面を押したら途中で止まる。画面を閉じられたら true
+        /// </summary>
+        /// <param name="_seconds"></param>
+        private async UniTask<bool> delayOrSkipAsync(float _seconds)
+        {
+            for (float time = 0f; time < _seconds; time += Time.unscaledDeltaTime)
+            {
+                if (isClearSkipRequested)
+                {
+                    return false;
+                }
+                if (await UniTask.Yield(PlayerLoopTiming.Update, destroyCancellationToken).SuppressCancellationThrow())
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>
@@ -350,6 +463,8 @@ namespace mumu
         /// </summary>
         private async UniTaskVoid playClearAsync()
         {
+            isClearing = true;
+            isClearSkipRequested = false;
             if (inputController != null)
             {
                 inputController.SetInputEnabled(false);
@@ -374,7 +489,7 @@ namespace mumu
                 {
                     CommonUtility.PlaySe(eSe.StarPing);
                     punchStar(i);
-                    if (await UniTask.Delay(TimeSpan.FromSeconds(ClearStarInterval), cancellationToken: destroyCancellationToken).SuppressCancellationThrow())
+                    if (await delayOrSkipAsync(ClearStarInterval))
                     {
                         return;
                     }
@@ -386,7 +501,7 @@ namespace mumu
             if (isNoRewind && stars != null && map.Path.StarCount == stars.Length)
             {
                 showBigStar();
-                if (await UniTask.Delay(TimeSpan.FromSeconds(ClearStarInterval), cancellationToken: destroyCancellationToken).SuppressCancellationThrow())
+                if (await delayOrSkipAsync(ClearStarInterval))
                 {
                     return;
                 }
@@ -408,13 +523,17 @@ namespace mumu
             {
                 return;
             }
+            if (await ClearSummary.ShowAsync(transform, map.Path.CollectedBoneCount, map.Path.StarCount, !map.HasRewound, destroyCancellationToken))
+            {
+                return;
+            }
 
             bool isFirstNoRewind = false;
             if (GameSession.Mode == eGameMode.Adventure)
             {
                 // クリアしたらヒントは終わり（次の冒険に持ち越さない）
                 SaveDataManager.Data.hintStage = 0;
-                isFirstNoRewind = StageRecord.Save(StageProgress.CurrentNumber, map.Path.StarCount, isPerfect, isNoRewind);
+                isFirstNoRewind = StageRecord.Save(GameSession.PlayedStageNumber, map.Path.StarCount, isPerfect, isNoRewind);
             }
             // クリアしたら、次におにわを開いた時に子が喜ぶ
             SaveDataManager.Data.gardenCheerPending = true;
@@ -422,7 +541,7 @@ namespace mumu
             addBones();
 
             // テーマの最後のステージは、そのテーマのおはなしを1回だけ見せる（次のステージへ進む前）
-            if (GameSession.Mode == eGameMode.Adventure && StageProgress.IsLastOfCurrentTheme())
+            if (GameSession.Mode == eGameMode.Adventure && !GameSession.IsReplay && !map.MapData.isBonus && StageProgress.IsLastOfCurrentTheme())
             {
                 int themeId = StageProgress.GetCurrentThemeId();
                 if (!SaveDataManager.Data.seenThemeStories.Contains(themeId))
@@ -445,13 +564,13 @@ namespace mumu
             int rewardId = GameSession.ClaimReward(out int duplicateBones);
             if (rewardId > 0)
             {
-                if (await UniTask.Delay(TimeSpan.FromSeconds(RewardDialogDelay), cancellationToken: destroyCancellationToken).SuppressCancellationThrow())
+                if (await delayOrSkipAsync(RewardDialogDelay))
                 {
                     return;
                 }
                 await showRewardAsync(rewardId, duplicateBones);
             }
-            else if (await UniTask.Delay(TimeSpan.FromSeconds(NextStageDelay), cancellationToken: destroyCancellationToken).SuppressCancellationThrow())
+            else if (await delayOrSkipAsync(NextStageDelay))
             {
                 return;
             }
@@ -491,17 +610,41 @@ namespace mumu
             {
                 return;
             }
-            bool isAdventure = GameSession.Mode == eGameMode.Adventure;
+            // ヒントは冒険の今のステージだけ（もう一度遊ぶ時は使えない）
+            bool isAdventure = GameSession.Mode == eGameMode.Adventure && !GameSession.IsReplay;
             hintButton.gameObject.SetActive(isAdventure);
-            hintButton.interactable = isAdventure && !isHintActive() && SaveDataManager.Data.bones >= HintCost;
+            hintButton.interactable = isAdventure && canUseMoreHints() && SaveDataManager.Data.bones >= currentHintCost();
+
+            // ボタンの下のほね（ステージで変わるので、ここで書き直す）
+            Transform costRect = hintButton.transform.Find("cost");
+            if (costRect != null)
+            {
+                costRect.GetComponent<TMPro.TMP_Text>().text = currentHintCost().ToString();
+            }
         }
 
         /// <summary>
-        /// このステージでヒントを出しているか
+        /// 次に使うヒントのほね（回数 × HintCost）
         /// </summary>
-        private static bool isHintActive()
+        private int currentHintCost()
         {
-            return SaveDataManager.Data.hintStage > 0 && SaveDataManager.Data.hintStage == StageProgress.CurrentNumber;
+            return HintCost * (usedHints() + 1);
+        }
+
+        /// <summary>
+        /// このステージでヒントを使った回数
+        /// </summary>
+        private int usedHints()
+        {
+            return SaveDataManager.Data.hintStage == StageProgress.CurrentNumber ? SaveDataManager.Data.hintUses : 0;
+        }
+
+        /// <summary>
+        /// このステージで、まだヒントを使えるか（経路の長さで決まる上限まで）
+        /// </summary>
+        private bool canUseMoreHints()
+        {
+            return map != null && usedHints() < map.HintMaxUses;
         }
 
         /// <summary>
@@ -509,7 +652,7 @@ namespace mumu
         /// </summary>
         private void onClickHintButton()
         {
-            if (isHintActive() || SaveDataManager.Data.bones < HintCost || isPopupOpen)
+            if (GameSession.IsReplay || !canUseMoreHints() || SaveDataManager.Data.bones < currentHintCost() || isPopupOpen)
             {
                 return;
             }
@@ -522,7 +665,7 @@ namespace mumu
         private async UniTaskVoid openHintConfirmAsync()
         {
             isPopupOpen = true;
-            var param = new ConfirmParam(TextLocalizer.Get("HINT_CONFIRM", HintCost), TextLocalizer.Get("HINT_USE"), true, useHint, TextLocalizer.Get("HINT_CANCEL"), true, null);
+            var param = new ConfirmParam(TextLocalizer.Get("HINT_CONFIRM", currentHintCost()), TextLocalizer.Get("HINT_USE"), true, useHint, TextLocalizer.Get("HINT_CANCEL"), true, null);
             await PopupManager.Instance.Open(ePopup.Confirm, param, destroyCancellationToken);
             isPopupOpen = false;
         }
@@ -532,17 +675,18 @@ namespace mumu
         /// </summary>
         private void useHint()
         {
-            if (isHintActive() || SaveDataManager.Data.bones < HintCost)
+            if (GameSession.IsReplay || !canUseMoreHints() || SaveDataManager.Data.bones < currentHintCost())
             {
                 return;
             }
 
-            SaveDataManager.Data.bones -= HintCost;
+            int uses = usedHints() + 1;
+            SaveDataManager.Data.bones -= currentHintCost();
             SaveDataManager.Data.hintStage = StageProgress.CurrentNumber;
-            SaveDataManager.Data.hintSeed = UnityEngine.Random.Range(1, int.MaxValue);
+            SaveDataManager.Data.hintUses = uses;
             SaveDataManager.Save();
-            CommonUtility.PlaySe(eSe.HintChime);
-            map.ShowHint(SaveDataManager.Data.hintSeed);
+            CommonUtility.PlaySe(uses == 1 ? eSe.HintChime : eSe.HintReveal);
+            map.ShowHint(uses);
             refreshHint();
         }
 
@@ -579,13 +723,25 @@ namespace mumu
         }
 
         /// <summary>
-        /// 札の文字（冒険はステージ番号、おさんぽは今日の何回目か、チャンス後は ???）
+        /// ステージ番号（1 始まり）のテーマ番号（マップの一覧から）
+        /// </summary>
+        /// <param name="_stageNumber"></param>
+        private static int themeOfStage(int _stageNumber)
+        {
+            List<MapInfo> list = MapCsv.LoadList();
+            int index = _stageNumber - 1;
+            return index >= 0 && index < list.Count ? list[index].ThemeId : ThemeDefine.DefaultThemeId;
+        }
+
+        /// <summary>
+        /// 札の文字（冒険はステージ番号とテーマ名、おさんぽは今日の何回目か、チャンス後は ???）
         /// </summary>
         private static string getStageLabel()
         {
             if (GameSession.Mode == eGameMode.Adventure)
             {
-                return TextLocalizer.Get("STAGE", StageProgress.CurrentNumber);
+                int number = GameSession.PlayedStageNumber;
+                return TextLocalizer.Get("STAGE_THEME", number, TextLocalizer.Get("THEME_NAME_" + themeOfStage(number)));
             }
             if (GameSession.IsDailyStroll)
             {
@@ -643,7 +799,7 @@ namespace mumu
                 return;
             }
 
-            int gained = GameSession.Mode == eGameMode.Adventure ? StageRecord.SaveBones(StageProgress.CurrentNumber, collected) : collected;
+            int gained = GameSession.Mode == eGameMode.Adventure ? StageRecord.SaveBones(GameSession.PlayedStageNumber, collected) : collected;
             if (gained > 0)
             {
                 CommonUtility.PlaySe(eSe.CoinGet);
@@ -661,6 +817,10 @@ namespace mumu
         {
             CharacterData character = CharacterMaster.Get(_characterId);
             CharacterSprites sprites = CharacterSprites.Load(character);
+            if (character != null && character.Tier >= RareJoinTier)
+            {
+                CommonUtility.PlaySe(eSe.RareJoin);
+            }
             CommonUtility.PlaySe(eSe.HappyBark);
             bool isDuplicate = _duplicateBones > 0;
             string title = TextLocalizer.Get(isDuplicate ? "PUG_DUPLICATE_TITLE" : "PUG_JOINED_TITLE");

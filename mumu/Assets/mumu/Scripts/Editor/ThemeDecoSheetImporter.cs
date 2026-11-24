@@ -16,8 +16,10 @@ namespace mumu
         private const int DecoFrameWidth = 169;
         private const int DecoFrameHeight = 281;
         private const int BackgroundFrameSize = 256;
-        private const string DecoSuffixA = "_2";
-        private const string DecoSuffixB = "_3";
+        /// <summary>デコの番号（2〜9）。2〜5 は高いデコのコマ送り、6〜9 は普通・小さいデコの静止画</summary>
+        private const int DecoFirstSlot = 2;
+        private const int DecoLastSlot = 9;
+        private const int DecoFirstStaticSlot = 6;
         private const string BackgroundSuffix = "_bg";
 
         /// <summary>
@@ -41,12 +43,21 @@ namespace mumu
             {
                 string id = theme.ToString("000000");
                 string folder = ThemesFolder + "/theme_" + id + "/";
-                foreach (string suffix in new[] { DecoSuffixA, DecoSuffixB })
+                for (int slot = DecoFirstSlot; slot <= DecoLastSlot; slot++)
                 {
-                    string name = id + suffix;
-                    if (File.Exists(folder + name + ".png"))
+                    string name = id + "_" + slot;
+                    string path = folder + name + ".png";
+                    if (!File.Exists(path))
                     {
-                        setup(folder + name + ".png", name, DecoFrameWidth, DecoFrameHeight, SpriteAlignment.BottomCenter, new Vector2(0.5f, 0f));
+                        continue;
+                    }
+                    if (slot < DecoFirstStaticSlot)
+                    {
+                        setup(path, name, DecoFrameWidth, DecoFrameHeight, SpriteAlignment.BottomCenter, new Vector2(0.5f, 0f));
+                    }
+                    else
+                    {
+                        setupSingle(path, name);
                     }
                 }
                 string bgName = id + BackgroundSuffix;
@@ -55,6 +66,35 @@ namespace mumu
                     setup(folder + bgName + ".png", bgName, BackgroundFrameSize, BackgroundFrameSize, SpriteAlignment.Center, new Vector2(0.5f, 0.5f));
                 }
             }
+        }
+
+        /// <summary>
+        /// 静止画のデコの設定（ドット絵、底辺をそろえる）。もう設定済みなら何もしない
+        /// </summary>
+        /// <param name="_path"></param>
+        /// <param name="_name"></param>
+        private static void setupSingle(string _path, string _name)
+        {
+            var importer = AssetImporter.GetAtPath(_path) as TextureImporter;
+            if (importer == null)
+            {
+                return;
+            }
+            if (importer.textureType == TextureImporterType.Sprite && importer.spriteImportMode == SpriteImportMode.Single
+                && importer.filterMode == FilterMode.Point && !importer.mipmapEnabled)
+            {
+                return;
+            }
+
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.spritePivot = new Vector2(0.5f, 0f);
+            importer.alphaIsTransparency = true;
+            importer.filterMode = FilterMode.Point;
+            importer.mipmapEnabled = false;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.SaveAndReimport();
         }
 
         /// <summary>

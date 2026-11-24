@@ -1,139 +1,62 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace mumu
 {
     /// <summary>
-    /// テーマの雰囲気演出（設定は ThemeDefine）
-    /// TODO: 仮実装。Overlay Canvas では ParticleSystem が UI の裏に隠れるため Image で代用している
+    /// テーマの雰囲気演出（粒は ParticleSystem。プレハブは Resources/Prefabs/Ambient/ambient_{id:000}、親は EffectManager の effectRoot）
     /// </summary>
     public class AmbientParticles : MonoBehaviour
     {
-        /// <summary>
-        /// 1粒の状態
-        /// </summary>
-        private class Piece
-        {
-            public RectTransform Rect;
-            public float Speed;
-            public float SwayFrequency;
-            public float Phase;
-            public float Spin;
-            public float BaseX;
-            public float Y;
-        }
+        /// <summary>プレハブのパス（ID の前まで）</summary>
+        private const string PrefabPath = "Prefabs/Ambient/ambient_";
 
-        private RectTransform area = null;
-        private ThemeDefine.AmbientSettings settings = null;
-        private Piece[] pieces = null;
+        /// <summary>今出している雰囲気演出（同時に1つだけ）</summary>
+        private static AmbientParticles current = null;
 
         /// <summary>
-        /// 全画面に生成（指定の兄弟順に配置）
+        /// 雰囲気演出を出す（前の演出は消す）。_parent と _siblingIndex は使わない（親は effectRoot）
         /// </summary>
         /// <param name="_parent"></param>
         /// <param name="_siblingIndex"></param>
         /// <param name="_themeId"></param>
         public static AmbientParticles Create(Transform _parent, int _siblingIndex, int _themeId)
         {
-            var go = new GameObject("ambient", typeof(RectTransform));
-            var rect = (RectTransform)go.transform;
-            rect.SetParent(_parent, false);
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            rect.SetSiblingIndex(_siblingIndex);
+            if (current != null)
+            {
+                UnityEngine.Object.Destroy(current.gameObject);
+                current = null;
+            }
 
-            var ambient = go.AddComponent<AmbientParticles>();
-            ambient.Setup(_themeId);
+            RectTransform effectRoot = EffectManager.Instance.EffectRoot;
+            if (effectRoot == null || ThemeDefine.GetAmbient(_themeId).Count == 0)
+            {
+                return null;
+            }
+
+            GameObject prefab = ResourceManager.Instance.Load<GameObject>(PrefabPath + _themeId.ToString("000"));
+            if (prefab == null)
+            {
+                Debug.LogWarning($"[AmbientParticles] プレハブがありません: {PrefabPath}{_themeId:000}");
+                return null;
+            }
+
+            GameObject go = UnityEngine.Object.Instantiate(prefab, effectRoot, false);
+            AmbientParticles ambient = go.GetComponent<AmbientParticles>();
+            ambient.Setup(effectRoot);
+            current = ambient;
             return ambient;
         }
 
         /// <summary>
-        /// 初期化
+        /// 粒を出す範囲を画面の大きさに合わせる（粒の動きはプレハブの設定）
         /// </summary>
-        /// <param name="_themeId"></param>
-        public void Setup(int _themeId)
+        /// <param name="_area"></param>
+        public void Setup(RectTransform _area)
         {
-            area = (RectTransform)transform;
-            settings = ThemeDefine.GetAmbient(_themeId);
-
-            pieces = new Piece[settings.Count];
-            for (int i = 0; i < pieces.Length; i++)
-            {
-                pieces[i] = createPiece();
-                respawn(pieces[i], Random.Range(area.rect.yMin, area.rect.yMax));
-            }
-        }
-
-        /// <summary>
-        /// 移動
-        /// </summary>
-        private void Update()
-        {
-            if (pieces == null || pieces.Length == 0)
-            {
-                return;
-            }
-
-            float deltaTime = Time.unscaledDeltaTime;
-            float time = Time.unscaledTime;
-            Rect rect = area.rect;
-            float margin = settings.Size.y * 2f;
-            float direction = settings.Rise ? 1f : -1f;
-
-            foreach (Piece piece in pieces)
-            {
-                piece.Y += piece.Speed * direction * deltaTime;
-                if (!settings.Rise && piece.Y < rect.yMin - margin)
-                {
-                    respawn(piece, rect.yMax + margin);
-                }
-                else if (settings.Rise && piece.Y > rect.yMax + margin)
-                {
-                    respawn(piece, rect.yMin - margin);
-                }
-
-                float x = piece.BaseX + Mathf.Sin(time * piece.SwayFrequency + piece.Phase) * settings.Sway;
-                piece.Rect.anchoredPosition = new Vector2(x, piece.Y);
-                if (settings.Spin)
-                {
-                    piece.Rect.localRotation = Quaternion.Euler(0f, 0f, time * piece.Spin + piece.Phase * Mathf.Rad2Deg);
-                }
-            }
-        }
-
-        /// <summary>
-        /// 1粒生成
-        /// </summary>
-        private Piece createPiece()
-        {
-            var go = new GameObject("piece", typeof(RectTransform), typeof(Image));
-            var rect = (RectTransform)go.transform;
-            rect.SetParent(area, false);
-            rect.sizeDelta = settings.Size * Random.Range(0.7f, 1.2f);
-
-            var image = go.GetComponent<Image>();
-            image.color = settings.Colors[Random.Range(0, settings.Colors.Length)];
-            image.raycastTarget = false;
-
-            return new Piece { Rect = rect };
-        }
-
-        /// <summary>
-        /// 画面外から出し直す
-        /// </summary>
-        /// <param name="_piece"></param>
-        /// <param name="_y"></param>
-        private void respawn(Piece _piece, float _y)
-        {
-            Rect rect = area.rect;
-            _piece.Y = _y;
-            _piece.BaseX = Random.Range(rect.xMin, rect.xMax);
-            _piece.Speed = Random.Range(settings.MinSpeed, settings.MaxSpeed);
-            _piece.SwayFrequency = Random.Range(0.8f, 1.6f);
-            _piece.Phase = Random.Range(0f, Mathf.PI * 2f);
-            _piece.Spin = Random.Range(-120f, 120f);
+            transform.localPosition = _area.rect.center;
+            ParticleSystem effect = GetComponent<ParticleSystem>();
+            ParticleSystem.ShapeModule shape = effect.shape;
+            shape.scale = new Vector3(_area.rect.width, _area.rect.height, 0f);
         }
     }
 }

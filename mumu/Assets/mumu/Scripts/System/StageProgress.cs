@@ -83,9 +83,33 @@ namespace mumu
             }
 
             normalize(list.Count);
-            MapData map = MapCsv.LoadMap(list[CurrentIndex]);
+            return loadMapAt(list, CurrentIndex);
+        }
+
+        /// <summary>
+        /// 指定の番号（0 始まり）のマップを読み込む（クリア済みのステージをもう一度遊ぶ用）
+        /// </summary>
+        /// <param name="_index"></param>
+        public static MapData LoadMapAt(int _index)
+        {
+            List<MapInfo> list = MapCsv.LoadList();
+            if (list.Count == 0)
+            {
+                return null;
+            }
+            return loadMapAt(list, Mathf.Clamp(_index, 0, list.Count - 1));
+        }
+
+        /// <summary>
+        /// マップを読み、クリア済みなら宝箱を取り除く
+        /// </summary>
+        /// <param name="_list"></param>
+        /// <param name="_index"></param>
+        private static MapData loadMapAt(List<MapInfo> _list, int _index)
+        {
+            MapData map = MapCsv.LoadMap(_list[_index]);
             // クリアしたステージは宝箱が無くなる（そこは普通の道になる。ほねはもう増えない）
-            if (map != null && StageRecord.IsCleared(CurrentNumber))
+            if (map != null && StageRecord.IsCleared(_index + 1))
             {
                 removeTreasures(map);
             }

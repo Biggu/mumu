@@ -1482,13 +1482,12 @@ public static class ThemeGen
             Px p;
             p = new Px(seed++); t.Untouched(p); G.Save(p, Path.Combine(dir, t.Id + "_0.png"));
             p = new Px(seed++); t.Touched(p); G.Save(p, Path.Combine(dir, t.Id + "_1.png"));
-            // 2〜5 = デコ（透明背景）、7 = 通れないブロックの土台
-            Px.YMin = -DecoExtraRows;
-            for (int i = 0; i < t.Obstructs.Decos.Length; i++) { p = new Px(seed++); t.Obstructs.Decos[i](p); G.Save(p, Path.Combine(dir, t.Id + "_" + (2 + i) + ".png")); }
+            // デコ（2〜9）は DecoSheetGen / 新しいデコの画像で作る。ここでは書かない（上書き防止）
+            // 10 = 水、11 = 通れないブロックの土台、12 = 橋
             Px.YMin = 0;
-            p = new Px(seed++); t.Water(p); G.Save(p, Path.Combine(dir, t.Id + "_6.png"));
-            p = new Px(seed++); t.Obstructs.Base(p); G.Save(p, Path.Combine(dir, t.Id + "_7.png"));
-            p = new Px(seed++); t.Bridge(p); G.Save(p, Path.Combine(dir, t.Id + "_8.png"));
+            p = new Px(seed++); t.Water(p); G.Save(p, Path.Combine(dir, t.Id + "_10.png"));
+            p = new Px(seed++); t.Obstructs.Base(p); G.Save(p, Path.Combine(dir, t.Id + "_11.png"));
+            p = new Px(seed++); t.Bridge(p); G.Save(p, Path.Combine(dir, t.Id + "_12.png"));
             SaveBg(t, Path.Combine(dir, t.Id + "_bg.png"));
         }
         SaveSheets(outRoot, themes);

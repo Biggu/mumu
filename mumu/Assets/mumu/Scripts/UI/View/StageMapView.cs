@@ -38,6 +38,14 @@ namespace mumu
         private const string StarOffPath = "Sprites/UI/ui_star_off";
         private const string CrownPath = "Sprites/UI/ui_crown_on";
         private const string PawPath = "Sprites/Common/paw";
+        private const string LockPrefabPath = "Prefabs/Common/stage_lock";
+        private const string PageButtonPath = "Prefabs/Common/stage_page_button";
+        private const string BonusIconPath = "Prefabs/Common/bonus_icon";
+        private const string BonusSpriteName = "gimmick_bone";
+        private const string ArrowLeftPath = "Sprites/UI/Kit/kit_icon_arrow_left";
+        private const string ArrowRightPath = "Sprites/UI/Kit/kit_icon_arrow_right";
+        /// <summary>ページを送る矢印の、画面の端からの距離</summary>
+        private const float PageButtonMargin = 60f;
 
         private static readonly Color ClearedColor = new Color(0.55f, 0.85f, 0.55f);
         private static readonly Color CurrentColor = new Color(1f, 0.85f, 0.35f);
@@ -70,6 +78,17 @@ namespace mumu
         private SpriteFrameAnimation pugAnimation = null;
         private PugSprites pugSprites = null;
         private bool isStarting = false;
+        /// <summary>今見ているページ（0 始まり）</summary>
+        private int shownPage = 0;
+        /// <summary>最後に見ていたページ（アプリを起動し直すと -1 に戻り、最新のページを出す）</summary>
+        private static int lastViewedPage = -1;
+        /// <summary>今のステージのページ（これより新しいページへは行けない）</summary>
+        private int currentPage = 0;
+        private List<MapInfo> mapList = null;
+        /// <summary>パグが道を走っている間は、ページを送れない</summary>
+        private bool isWalking = false;
+        private MumuButton olderButton = null;
+        private MumuButton newerButton = null;
 
         /// <summary>
         /// 初期化
@@ -87,14 +106,19 @@ namespace mumu
 
             List<MapInfo> list = MapCsv.LoadList();
             int current = StageProgress.GetCurrentIndex();
+            mapList = list;
+            currentPage = current / StagesPerPage;
+            shownPage = lastViewedPage >= 0 ? Mathf.Min(lastViewedPage, currentPage) : currentPage;
+            lastViewedPage = shownPage;
             if (list.Count > 0)
             {
                 await setupBackgroundAsync(list[Mathf.Min(current, list.Count - 1)].ThemeId);
-                buildPage(list, current);
+                buildPage(list, shownPage, current);
+                createPageButtons();
             }
             await base.onInitView();
 
-            walkAsync(GameSession.WalkFromIndex, current).Forget();
+            walkThenUnlockAsync(GameSession.WalkFromIndex, current).Forget();
             GameSession.WalkFromIndex = -1;
         }
 
@@ -135,9 +159,13 @@ namespace mumu
         /// </summary>
         /// <param name="_list"></param>
         /// <param name="_current"></param>
-        private void buildPage(List<MapInfo> _list, int _current)
+        private void buildPage(List<MapInfo> _list, int _page, int _current)
         {
-            int first = _current / StagesPerPage * StagesPerPage;
+            nodePositions.Clear();
+            currentNode = null;
+            pug = null;
+            pugAnimation = null;
+            int first = _page * StagesPerPage;
             int last = Mathf.Min(first + StagesPerPage, _list.Count) - 1;
             if (titleText != null)
             {
@@ -174,7 +202,11 @@ namespace mumu
                     currentNode = node;
                 }
             }
-            createPug(nodePositions[_current - first]);
+            // パグは今のステージのページにだけ置く
+            if (_current / StagesPerPage == _page)
+            {
+                createPug(nodePositions[_current - first]);
+            }
         }
 
         /// <summary>
@@ -221,21 +253,50 @@ namespace mumu
             int number = _index + 1;
             bool isCleared = _index < StageProgress.ClearedCount;
             bool isCurrent = _index == _current;
+            bool isBonus = mapList != null && _index < mapList.Count && mapList[_index].IsBonus;
 
             Image node = UiFactory.CreateImage($"stage{number}", pageRoot, ResourceManager.Instance.Load<Sprite>(NodeSpritePath), new Vector2(NodeSize, NodeSize));
             node.color = isCurrent ? CurrentColor : (isCleared ? ClearedColor : LockedColor);
             node.rectTransform.anchoredPosition = _position;
 
-            // 今のステージだけ押して始められる
-            if (isCurrent)
+            // 今のステージは押して始められる。クリアしたステージは、もう一度遊べる（進みは変わらない）
+            // ボーナスステージは一度だけ（クリアしたら押せない）
+            if (isCurrent || (isCleared && !isBonus))
             {
                 node.raycastTarget = true;
                 var button = node.gameObject.AddComponent<MumuButton>();
                 button.targetGraphic = node;
-                button.SetOnClick(onClickPlayButton);
+                if (isCurrent)
+                {
+                    button.SetOnClick(onClickPlayButton);
+                }
+                else
+                {
+                    int replayIndex = _index;
+                    button.SetOnClick(() => onClickReplay(replayIndex));
+                }
             }
 
-            createText(node.transform, number.ToString(), NodeFontSize);
+            // ボーナスステージは番号の代わりにほねの絵
+            if (isBonus)
+            {
+                createBonusIcon(node.transform);
+            }
+            else
+            {
+                createText(node.transform, number.ToString(), NodeFontSize);
+            }
+
+            // まだ開いていないステージには鍵の印（Prefab から出す）
+            if (!isCleared && !isCurrent)
+            {
+                GameObject lockPrefab = ResourceManager.Instance.Load<GameObject>(LockPrefabPath);
+                if (lockPrefab != null)
+                {
+                    Transform lockIcon = UnityEngine.Object.Instantiate(lockPrefab, node.transform, false).transform;
+                    lockIcon.localPosition = Vector3.zero;
+                }
+            }
 
             if (isCleared)
             {
@@ -259,6 +320,15 @@ namespace mumu
                     Image crown = UiFactory.CreateImage("crown", node.transform, ResourceManager.Instance.Load<Sprite>(CrownPath), new Vector2(SmallStarSize * 1.4f, SmallStarSize * 1.4f));
                     crown.rectTransform.anchoredPosition = new Vector2(NodeSize * 0.4f, NodeSize * 0.4f);
                 }
+            }
+
+            // 鍵のかかったステージを押すと、まだ遊べないことを音で知らせる
+            if (!isCurrent && !isCleared)
+            {
+                node.raycastTarget = true;
+                var lockedButton = node.gameObject.AddComponent<MumuButton>();
+                lockedButton.targetGraphic = node;
+                lockedButton.SetOnClick(onClickLocked);
             }
 
             return node.rectTransform;
@@ -303,7 +373,7 @@ namespace mumu
         /// </summary>
         /// <param name="_from"></param>
         /// <param name="_to"></param>
-        private async UniTaskVoid walkAsync(int _from, int _to)
+        private async UniTask walkAsync(int _from, int _to)
         {
             int first = _to / StagesPerPage * StagesPerPage;
             if (pug == null || _from < 0 || _from >= _to)
@@ -358,6 +428,18 @@ namespace mumu
         }
 
         /// <summary>
+        /// 歩き終わるまでページを送れないようにして歩かせる
+        /// </summary>
+        /// <param name="_from"></param>
+        /// <param name="_to"></param>
+        private async UniTaskVoid walkThenUnlockAsync(int _from, int _to)
+        {
+            isWalking = true;
+            await walkAsync(_from, _to);
+            isWalking = false;
+        }
+
+        /// <summary>
         /// 黒フェードが明けるのを待つ（中断されたら true）
         /// </summary>
         private UniTask<bool> waitFadeInAsync()
@@ -386,6 +468,26 @@ namespace mumu
         }
 
         /// <summary>
+        /// ボーナスステージのほねの絵（Prefab から出す）
+        /// </summary>
+        /// <param name="_parent"></param>
+        private void createBonusIcon(Transform _parent)
+        {
+            GameObject prefab = ResourceManager.Instance.Load<GameObject>(BonusIconPath);
+            if (prefab == null)
+            {
+                return;
+            }
+            GameObject go = UnityEngine.Object.Instantiate(prefab, _parent, false);
+            Image image = go.GetComponentInChildren<Image>();
+            Sprite[] frames = GimmickSprites.LoadFrames(BonusSpriteName);
+            if (image != null && frames.Length > 0)
+            {
+                image.sprite = frames[0];
+            }
+        }
+
+        /// <summary>
         /// 文字を作る（親いっぱい）
         /// </summary>
         /// <param name="_parent"></param>
@@ -405,6 +507,109 @@ namespace mumu
             text.color = NodeTextColor;
             text.alignment = TextAlignmentOptions.Center;
             text.raycastTarget = false;
+        }
+
+        /// <summary>
+        /// 鍵のかかったステージを押した時の処理（まだ遊べない音を鳴らす）
+        /// </summary>
+        private void onClickLocked()
+        {
+            CommonUtility.PlaySe(eSe.LockedTap);
+        }
+
+        /// <summary>
+        /// クリアしたステージを押した時の処理（もう一度遊ぶ）
+        /// </summary>
+        /// <param name="_index"></param>
+        private void onClickReplay(int _index)
+        {
+            if (isStarting || isWalking || (mapList != null && _index < mapList.Count && mapList[_index].IsBonus))
+            {
+                return;
+            }
+            isStarting = true;
+            CommonUtility.PlaySe(eSe.ReplayStart);
+            GameSession.StartReplay(_index);
+            ViewManager.Instance.ToGameWithFade().Forget();
+        }
+
+        /// <summary>
+        /// ページの矢印を作る（Prefab から出す。左は前のページ、右は次のページ）
+        /// </summary>
+        private void createPageButtons()
+        {
+            olderButton = createPageButton(ArrowLeftPath, 0f, PageButtonMargin, () => showPage(shownPage - 1));
+            newerButton = createPageButton(ArrowRightPath, 1f, -PageButtonMargin, () => showPage(shownPage + 1));
+            updatePageButtons();
+        }
+
+        /// <summary>
+        /// ページの矢印を1つ作る
+        /// </summary>
+        /// <param name="_sprite"></param>
+        /// <param name="_anchorX">0 = 左端、1 = 右端</param>
+        /// <param name="_offsetX"></param>
+        /// <param name="_onClick"></param>
+        private MumuButton createPageButton(string _sprite, float _anchorX, float _offsetX, System.Action _onClick)
+        {
+            GameObject prefab = ResourceManager.Instance.Load<GameObject>(PageButtonPath);
+            if (prefab == null || nodeRoot == null)
+            {
+                return null;
+            }
+
+            GameObject go = UnityEngine.Object.Instantiate(prefab, nodeRoot, false);
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = rect.anchorMax = new Vector2(_anchorX, 0.5f);
+            rect.anchoredPosition = new Vector2(_offsetX, 0f);
+            var image = go.GetComponentInChildren<Image>();
+            if (image != null)
+            {
+                image.sprite = ResourceManager.Instance.Load<Sprite>(_sprite);
+            }
+            var button = go.GetComponent<MumuButton>();
+            if (button != null)
+            {
+                button.SetOnClick(_onClick);
+            }
+            return button;
+        }
+
+        /// <summary>
+        /// 前後のページの矢印を、ページがあるときだけ出す（矢印は前に出す）
+        /// </summary>
+        private void updatePageButtons()
+        {
+            if (olderButton != null)
+            {
+                olderButton.gameObject.SetActive(shownPage > 0);
+                olderButton.transform.SetAsLastSibling();
+            }
+            if (newerButton != null)
+            {
+                newerButton.gameObject.SetActive(shownPage < currentPage);
+                newerButton.transform.SetAsLastSibling();
+            }
+        }
+
+        /// <summary>
+        /// 指定のページを表示する（パグが歩いている間は送らない）
+        /// </summary>
+        /// <param name="_page"></param>
+        private void showPage(int _page)
+        {
+            if (isWalking || isStarting || mapList == null || _page == shownPage || _page < 0 || _page > currentPage)
+            {
+                return;
+            }
+            shownPage = _page;
+            lastViewedPage = _page;
+            if (pageRoot != null)
+            {
+                UnityEngine.Object.Destroy(pageRoot.gameObject);
+            }
+            buildPage(mapList, shownPage, StageProgress.GetCurrentIndex());
+            updatePageButtons();
         }
 
         /// <summary>

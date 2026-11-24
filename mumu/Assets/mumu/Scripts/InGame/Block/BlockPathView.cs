@@ -23,6 +23,15 @@ namespace mumu
         private readonly RectTransform linePrevious;
         private readonly RectTransform lineNext;
         private readonly Image highlight;
+        /// <summary>枠の普通の色（赤い予告を消した時に戻す）</summary>
+        private readonly Color highlightBaseColor;
+        /// <summary>多く戻る時に消える道を赤く出す色</summary>
+        private static readonly Color RewindPreviewColor = new Color(1f, 0.2f, 0.2f, 1f);
+        /// <summary>ヒントの線がふわっと出る時間（秒）</summary>
+        private const float HintFadeDuration = 0.4f;
+        /// <summary>ヒントの線を出しているか（出た時だけフェードする）</summary>
+        private bool isHintShown = false;
+        private CancellationTokenSource hintFadeCts = null;
         private readonly CancellationToken destroyToken;
 
         /// <summary>経路上の足あと</summary>
@@ -50,6 +59,7 @@ namespace mumu
             linePrevious = _linePrevious;
             lineNext = _lineNext;
             highlight = _highlight;
+            highlightBaseColor = _highlight.color;
             destroyToken = _destroyToken;
             lineImages = new[] { _linePrevious.GetComponent<Image>(), _lineNext.GetComponent<Image>() };
             if (lineImages[0] != null)
@@ -90,16 +100,60 @@ namespace mumu
         {
             if (!_isHint)
             {
+                isHintShown = false;
                 return;
             }
 
             lineRoot.SetActive(true);
-            setLineColor(HintLineColor);
+            if (!isHintShown)
+            {
+                // 初めて出る時だけ、ふわっと出す
+                isHintShown = true;
+                fadeHintInAsync(TokenUtility.Restart(ref hintFadeCts, destroyToken)).Forget();
+            }
+            else
+            {
+                setLineColor(HintLineColor);
+            }
             setLineSegment(linePrevious, _toPrevious);
             setLineSegment(lineNext, _toNext);
             if (paw != null)
             {
                 paw.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>
+        /// ヒントの線を透明から出す（途中で消えたら止める）
+        /// </summary>
+        /// <param name="_token"></param>
+        private async UniTaskVoid fadeHintInAsync(CancellationToken _token)
+        {
+            for (float time = 0f; time < HintFadeDuration; time += Time.unscaledDeltaTime)
+            {
+                setLineAlpha(time / HintFadeDuration);
+                if (await UniTask.Yield(PlayerLoopTiming.Update, _token).SuppressCancellationThrow())
+                {
+                    return;
+                }
+            }
+            setLineAlpha(1f);
+        }
+
+        /// <summary>
+        /// ヒントの線の透明度を変える（色は HintLineColor のまま）
+        /// </summary>
+        /// <param name="_alpha"></param>
+        private void setLineAlpha(float _alpha)
+        {
+            Color color = HintLineColor;
+            color.a = _alpha;
+            foreach (Image image in lineImages)
+            {
+                if (image != null)
+                {
+                    image.color = color;
+                }
             }
         }
 
@@ -116,6 +170,17 @@ namespace mumu
                     image.color = _color;
                 }
             }
+        }
+
+        /// <summary>
+        /// 多く戻る時に消える道を赤く出す（外すと普通の枠に戻す）
+        /// </summary>
+        /// <param name="_isVisible"></param>
+        public void SetRewindPreview(bool _isVisible)
+        {
+            TokenUtility.Cancel(ref highlightCts);
+            highlight.color = _isVisible ? RewindPreviewColor : highlightBaseColor;
+            highlight.gameObject.SetActive(_isVisible);
         }
 
         /// <summary>

@@ -10,7 +10,7 @@ using UnityEngine.UI;
 namespace mumu
 {
     /// <summary>
-    /// マップの1ブロック。見た目の部品（道・パグ・ギミック・★・揺れ）は各クラスに任せる
+    /// マップ1マスのブロック。見た目の部品（土台・道・パグ・ギミック・★・揺れ）を持つ。外からは公開メソッドだけを使う
     /// </summary>
     public class Block : MonoBehaviour
     {
@@ -27,7 +27,7 @@ namespace mumu
         private static readonly int StatePopUpHash = Animator.StringToHash(StatePopUp);
         private static readonly int StateDropHash = Animator.StringToHash(StateDrop);
 
-        /// <summary>通れないブロックの土台の色（暗くして通れるマスと見分けやすくする。デコの色は変えない）</summary>
+        /// <summary>通れないブロックの土台の色（暗くして通れる道と見分けやすくする。デコの色は変えない）</summary>
         public static readonly Color ObstructTint = new Color(0.58f, 0.56f, 0.62f);
         /// <summary>壊れた橋の色（くすませる）</summary>
         private static readonly Color CrumbledColor = new Color(0.55f, 0.5f, 0.5f);
@@ -45,16 +45,23 @@ namespace mumu
         /// <summary>ブロックの上のデコ画像（通れないブロックの岩・木など）</summary>
         [SerializeField]
         private Image deco;
+        /// <summary>このブロックに出すデコ（0〜7）。-1 はデコなし（平らな土台だけ）</summary>
+        private int decoChoice = -1;
         /// <summary>ラベル</summary>
         [SerializeField]
         private TextMeshProUGUI text;
         /// <summary>次に進めるブロックの上面の光る枠</summary>
         [SerializeField]
         private Image highlight;
-        /// <summary>Goal のパグ（泣いている女の子）</summary>
-        [FormerlySerializedAs("flag")]
-        [SerializeField]
-        private GameObject pug;
+        /// <summary>Goal のパグ（泣いている女の子）。Goal のときだけ goal_pug を読み込んで作る</summary>
+        private GameObject pug = null;
+        /// <summary>Goal のパグのプレハブ（Resources から）</summary>
+        private const string GoalPugPath = "Prefabs/InGame/goal_pug";
+        /// <summary>パグを隠す檻（goal_pug の子）</summary>
+        private const string CageChildName = "cage";
+        /// <summary>檻が解放で上がる高さ（ブロックの上へ）</summary>
+        private const float CageLiftHeight = 60f;
+        private RectTransform cageRect = null;
         /// <summary>経路の線の親（上面に沿わせるため Y を潰している）</summary>
         [SerializeField]
         private GameObject lineRoot;
@@ -79,7 +86,7 @@ namespace mumu
         /// <summary>男の子が近くに来て Goal の子が泣きやんでいるか</summary>
         private bool isGoalNoticed = false;
         private bool isGoalUnlocked = false;
-        /// <summary>おにわの地面（通れるマスを最初から草にする）</summary>
+        /// <summary>おにわの地面（通れるブロックを最初から草にする）</summary>
         private bool isGardenGround = false;
         private bool isCrumbled = false;
         /// <summary>一時表示中のテキスト</summary>
@@ -108,7 +115,7 @@ namespace mumu
         private bool isGoal => blockType == eBlockType.Goal;
 
         /// <summary>
-        /// 初期化（見た目の部品を作り直す）
+        /// 初期化（見た目の部品を作り直す！E
         /// </summary>
         /// <param name="_type"></param>
         /// <param name="_subTypes"></param>
@@ -125,7 +132,18 @@ namespace mumu
             body = (RectTransform)transform.Find(BodyName);
 
             pathView = new BlockPathView(lineRoot, linePrevious, lineNext, highlight, destroyCancellationToken);
-            pugView = new BlockPugView(pug, destroyCancellationToken);
+            if (isGoal)
+            {
+                createPug();
+            }
+            else
+            {
+                if (pug != null)
+                {
+                    pug.SetActive(false);
+                }
+                pugView = null;
+            }
             gimmickView = new BlockGimmickView(destroyCancellationToken);
             checkpointStar = new BlockCheckpointStar(destroyCancellationToken);
             shake = new BlockShake(destroyCancellationToken);
@@ -136,8 +154,7 @@ namespace mumu
             text.raycastTarget = false;
             applyDeco();
 
-            // パグは SetupPug で画像が設定されるまで非表示
-            pug.SetActive(false);
+            // パグは SetupPug で画像が設定されるまで非表示（createPug で作ったときは非表示のまま）
             highlight.raycastTarget = false;
             highlight.gameObject.SetActive(false);
             lineRoot.SetActive(false);
@@ -206,6 +223,15 @@ namespace mumu
         }
 
         /// <summary>
+        /// 多く戻る時に消える道を赤く出す
+        /// </summary>
+        /// <param name="_isVisible"></param>
+        public void SetRewindPreview(bool _isVisible)
+        {
+            pathView.SetRewindPreview(_isVisible);
+        }
+
+        /// <summary>
         /// 経路の線（前後のブロックへの方向、zero でその側なし）
         /// </summary>
         /// <param name="_isOnPath"></param>
@@ -229,7 +255,7 @@ namespace mumu
         }
 
         /// <summary>
-        /// おにわの地面にする（通れるマスを通過済みの見た目に）
+        /// おにわの地面にする（通れるブロックを通過済みの見た目に）
         /// </summary>
         public void SetGardenGround()
         {
@@ -252,12 +278,12 @@ namespace mumu
             applyPug();
             if (_isNoticed)
             {
-                pugView.Punch();
+                punchPug();
             }
         }
 
         /// <summary>
-        /// Goal の解放状態
+        /// Goal の解放状慁E
         /// </summary>
         /// <param name="_isUnlocked"></param>
         public void SetGoalUnlocked(bool _isUnlocked)
@@ -268,14 +294,27 @@ namespace mumu
             }
 
             isGoalUnlocked = _isUnlocked;
+            applyCage();
             if (_isUnlocked)
             {
-                pugView.Punch();
+                punchPug();
             }
         }
 
         /// <summary>
-        /// クリア状態（パグが喜んで横にずれる）
+        /// 檻の位置（解放で上に上がり、戻すと下りてパグを隠す）
+        /// </summary>
+        private void applyCage()
+        {
+            if (cageRect == null)
+            {
+                return;
+            }
+            cageRect.anchoredPosition = new Vector2(0f, isGoalUnlocked ? CageLiftHeight : 0f);
+        }
+
+        /// <summary>
+        /// クリア状態（パグが喜んで横にずれる！E
         /// </summary>
         /// <param name="_isCleared"></param>
         public void SetCleared(bool _isCleared)
@@ -289,17 +328,17 @@ namespace mumu
             applyPug();
             if (_isCleared)
             {
-                pugView.Punch();
+                punchPug();
             }
         }
 
         /// <summary>
-        /// Goal のパグを設定
+        /// Goal のパグを設宁E
         /// </summary>
         /// <param name="_pugSprites"></param>
         public void SetupPug(PugSprites _pugSprites)
         {
-            if (!isGoal || _pugSprites == null)
+            if (!isGoal || _pugSprites == null || pugView == null)
             {
                 return;
             }
@@ -317,7 +356,7 @@ namespace mumu
         }
 
         /// <summary>
-        /// チェックポイント番号を設定（★は初めて番号が付いた時に作る）
+        /// チェックポイント番号を設定（初めて番号が付いた時に作る）
         /// </summary>
         /// <param name="_number"></param>
         public void SetCheckpoint(int _number)
@@ -367,6 +406,15 @@ namespace mumu
         }
 
         /// <summary>
+        /// 霧をかける（経路が近づくと消える）
+        /// </summary>
+        /// <param name="_isFogged"></param>
+        public void SetFogged(bool _isFogged)
+        {
+            gimmickView.SetFogged(_isFogged);
+        }
+
+        /// <summary>
         /// こわれる橋の状態（壊れると板が落ちてブロックが暗くなる）
         /// </summary>
         /// <param name="_isCrumbled"></param>
@@ -406,7 +454,16 @@ namespace mumu
         /// <param name="_isVisible"></param>
         public void SetDecoVisible(bool _isVisible)
         {
-            deco.gameObject.SetActive(_isVisible && BlockTypeUtility.GetObstructIndex(blockType) >= 0);
+            deco.gameObject.SetActive(_isVisible && decoChoice >= 0);
+        }
+
+        /// <summary>
+        /// デコの番号を決める（Setup より前に呼ぶ。-1 でデコなし）
+        /// </summary>
+        /// <param name="_index"></param>
+        public void SetDecoChoice(int _index)
+        {
+            decoChoice = _index;
         }
 
         /// <summary>
@@ -454,7 +511,44 @@ namespace mumu
         /// </summary>
         private void applyPug()
         {
-            pugView.Apply(isCleared, isGoalNoticed);
+            if (pugView != null)
+            {
+                pugView.Apply(isCleared, isGoalNoticed);
+            }
+        }
+
+        /// <summary>
+        /// Goal のパグを作る（Goal のときだけ。既にあれば作り直さない）
+        /// </summary>
+        private void createPug()
+        {
+            if (pug == null)
+            {
+                GameObject prefab = ResourceManager.Instance.Load<GameObject>(GoalPugPath);
+                if (prefab == null)
+                {
+                    Debug.LogWarning($"[Block] Goal のパグのプレハブがありません: {GoalPugPath}");
+                    return;
+                }
+                // 元の pug と同じ親（body）の下に置く
+                Transform parent = body != null ? (Transform)body : transform;
+                pug = UnityEngine.Object.Instantiate(prefab, parent, false);
+                pug.SetActive(false);
+            }
+            cageRect = pug.transform.Find(CageChildName) as RectTransform;
+            applyCage();
+            pugView = new BlockPugView(pug, destroyCancellationToken);
+        }
+
+        /// <summary>
+        /// Goal のパグを跳ねさせる（パグがないときは何もしない）
+        /// </summary>
+        private void punchPug()
+        {
+            if (pugView != null)
+            {
+                pugView.Punch();
+            }
         }
 
         /// <summary>
@@ -487,11 +581,11 @@ namespace mumu
         }
 
         /// <summary>
-        /// 通れないブロックならデコを表示
+        /// デコの番号（decoChoice）があればデコを表示
         /// </summary>
         private void applyDeco()
         {
-            int decoIndex = BlockTypeUtility.GetObstructIndex(blockType);
+            int decoIndex = decoChoice;
             deco.raycastTarget = false;
             deco.gameObject.SetActive(decoIndex >= 0);
             if (decoIndex < 0)
@@ -509,10 +603,10 @@ namespace mumu
                 CommonUtility.GetOrAddComponent<SpriteFrameAnimation>(deco.gameObject).Play(frames, ThemeSprites.DecoFps);
             }
 
-            // ブロックの下端にそろえ、背の高いデコは上にはみ出して奥のブロックに重なる
+            // デコの根元はブロックの真ん中にそろえ、背の高いデコは上に伸びる
             RectTransform rect = deco.rectTransform;
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = new Vector2(1f, 0f);
+            rect.anchorMin = new Vector2(0f, 0.5f);
+            rect.anchorMax = new Vector2(1f, 0.5f);
             rect.pivot = new Vector2(0.5f, 0f);
             rect.anchoredPosition = Vector2.zero;
             float width = ((RectTransform)transform).rect.width;
@@ -520,7 +614,7 @@ namespace mumu
         }
 
         /// <summary>
-        /// 表示する画像
+        /// 表示する画僁E
         /// </summary>
         private Sprite getSprite()
         {
@@ -577,3 +671,4 @@ namespace mumu
         }
     }
 }
+

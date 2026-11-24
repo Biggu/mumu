@@ -15,6 +15,9 @@ namespace mumu
         private const float OpenPunchAmount = 0.05f;
         private const float OpenPunchDuration = 0.2f;
         private const string ScrollItemPrefabPath = "Prefabs/Common/pug_book_scroll_item";
+        private const string FilterButtonPath = "Prefabs/Common/filter_button";
+        /// <summary>フィルターボタンの、パネルの角からの距離</summary>
+        private const float FilterButtonMargin = 20f;
 
         /// <summary>中身のパネル（開く時に跳ねる）</summary>
         [SerializeField]
@@ -43,7 +46,17 @@ namespace mumu
         private class Item
         {
             public PugBookScrollItem View;
+            /// <summary>キャラクター ID（未所持だけ出す時に使う）</summary>
+            public int Id;
         }
+
+        /// <summary>未所持のパグだけ出すか</summary>
+        private bool isUnownedOnly = false;
+        /// <summary>「未所持のみ」の切り替えボタン</summary>
+        private MumuButton filterButton = null;
+        /// <summary>ボタンの色（選ばれている時と、ふつう）</summary>
+        private static readonly Color FilterOnColor = new Color(1f, 0.85f, 0.35f);
+        private static readonly Color FilterOffColor = Color.white;
 
         /// <summary>いま並んでいる tier のカード</summary>
         private List<Item> items = new List<Item>();
@@ -68,6 +81,7 @@ namespace mumu
         private void setup()
         {
             closeButton.SetOnClick(onClickCloseButton);
+            filterButton = createFilterButton();
             if (dimButton != null)
             {
                 dimButton.SetClickSeEnabled(false);
@@ -126,7 +140,7 @@ namespace mumu
                 }
                 tierItems[_tier] = items;
             }
-            setCardsActive(items, true);
+            applyFilter(items);
             if (tierTabs != null)
             {
                 for (int i = 0; i < tierTabs.Length; i++)
@@ -143,6 +157,56 @@ namespace mumu
         /// </summary>
         /// <param name="_cards"></param>
         /// <param name="_isActive"></param>
+        private void applyFilter(List<Item> _cards)
+        {
+            foreach (Item item in _cards)
+            {
+                item.View.gameObject.SetActive(!isUnownedOnly || !PugCollection.IsOwned(item.Id));
+            }
+        }
+
+        /// <summary>
+        /// 「未所持のみ」ボタンを作る（Prefabs/Common/filter_button から出す）
+        /// </summary>
+        private MumuButton createFilterButton()
+        {
+            GameObject prefab = ResourceManager.Instance.Load<GameObject>(FilterButtonPath);
+            if (prefab == null || panel == null)
+            {
+                return null;
+            }
+            GameObject go = Instantiate(prefab, panel, false);
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(-FilterButtonMargin, -FilterButtonMargin);
+            TMP_Text label = go.GetComponentInChildren<TMP_Text>();
+            if (label != null)
+            {
+                label.text = TextLocalizer.Get("FILTER_UNOWNED");
+            }
+            var button = go.GetComponent<MumuButton>();
+            if (button != null)
+            {
+                button.image.color = FilterOffColor;
+                button.SetOnClick(onClickFilterButton);
+            }
+            return button;
+        }
+
+        /// <summary>
+        /// 「未所持のみ」の切り替え
+        /// </summary>
+        private void onClickFilterButton()
+        {
+            isUnownedOnly = !isUnownedOnly;
+            if (filterButton != null)
+            {
+                filterButton.image.color = isUnownedOnly ? FilterOnColor : FilterOffColor;
+            }
+            showTier(selectedTier);
+        }
+
         private static void setCardsActive(List<Item> _cards, bool _isActive)
         {
             foreach (Item item in _cards)
@@ -170,7 +234,7 @@ namespace mumu
         {
             PugBookScrollItem view = Instantiate(scrollItemPrefab, content, false);
             view.Setup(_character, onClickPriceButton, onClickOwnedItem);
-            return new Item { View = view };
+            return new Item { View = view, Id = _character.Id };
         }
 
         /// <summary>

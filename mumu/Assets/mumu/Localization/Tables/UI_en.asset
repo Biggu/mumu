@@ -257,11 +257,11 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 403868060053504
-    m_Localized: '[TODO] Woof-derful Bonus! Bones +{0}'
+    m_Localized: Woof-derful Bonus! Bones +{0}
     m_Metadata:
       m_Items: []
   - m_Id: 403868089413632
-    m_Localized: '[TODO] No-return perfect clear'
+    m_Localized: Perfect clear without rewinding
     m_Metadata:
       m_Items: []
   - m_Id: 414729512251392
@@ -321,15 +321,261 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 414729541611533
-    m_Localized: '[TODO] Use a hint? It costs {0} bones'
+    m_Localized: Use a hint? It costs {0} bones
     m_Metadata:
       m_Items: []
   - m_Id: 414729541611534
-    m_Localized: '[TODO] Use'
+    m_Localized: Use
     m_Metadata:
       m_Items: []
   - m_Id: 414729541611535
-    m_Localized: '[TODO] Cancel'
+    m_Localized: Cancel
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1893249019113472
+    m_Localized: 'Go back {0} tiles?
+
+      You won''t get the no-rewind clear bonus.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011159896064
+    m_Localized: '[TODO] Theme 15 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644800
+    m_Localized: '[TODO] Theme 16 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644801
+    m_Localized: '[TODO] Theme 17 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644802
+    m_Localized: '[TODO] Theme 18 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644803
+    m_Localized: '[TODO] Theme 19 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644804
+    m_Localized: '[TODO] Theme 20 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644805
+    m_Localized: '[TODO] Theme 21 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644806
+    m_Localized: '[TODO] Theme 22 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644807
+    m_Localized: '[TODO] Theme 23 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644808
+    m_Localized: '[TODO] Theme 24 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644809
+    m_Localized: '[TODO] Theme 25 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644810
+    m_Localized: '[TODO] Theme 26 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644811
+    m_Localized: '[TODO] Theme 27 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644812
+    m_Localized: '[TODO] Theme 28 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644813
+    m_Localized: '[TODO] Theme 29 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644814
+    m_Localized: '[TODO] Theme 30 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644815
+    m_Localized: '[TODO] Theme 31 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644816
+    m_Localized: '[TODO] Theme 32 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1919011197644817
+    m_Localized: '[TODO] Theme 33 story'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591043833856
+    m_Localized: Meadow
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591081582592
+    m_Localized: Summer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591081582593
+    m_Localized: Winter
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591081582594
+    m_Localized: Autumn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591081582595
+    m_Localized: Spring
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591081582596
+    m_Localized: Sakura
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591081582597
+    m_Localized: Desert
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591081582598
+    m_Localized: Cake
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591081582599
+    m_Localized: Pudding
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591081582600
+    m_Localized: City
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591081582601
+    m_Localized: Village
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591081582602
+    m_Localized: Sea
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591081582603
+    m_Localized: Ice
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591081582604
+    m_Localized: Office
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591081582605
+    m_Localized: Space
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776896
+    m_Localized: Underwater
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776897
+    m_Localized: Moon Forest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776898
+    m_Localized: Castle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776899
+    m_Localized: Mountain
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776900
+    m_Localized: Night Meadow
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776901
+    m_Localized: Night Summer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776902
+    m_Localized: Night Winter
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776903
+    m_Localized: Night Autumn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776904
+    m_Localized: Night Spring
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776905
+    m_Localized: Night Sakura
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776906
+    m_Localized: Night Desert
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776907
+    m_Localized: Night Cake
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776908
+    m_Localized: Night Pudding
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776909
+    m_Localized: Night City
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776910
+    m_Localized: Night Village
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776911
+    m_Localized: Night Sea
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776912
+    m_Localized: Night Ice
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776913
+    m_Localized: Night Office
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776914
+    m_Localized: Bonus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776915
+    m_Localized: Stage {0}  {1}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776916
+    m_Localized: '{0}/{1} left today'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776917
+    m_Localized: Not owned only
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776918
+    m_Localized: Bones +{0}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776919
+    m_Localized: "\u2605 {0}/3"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776920
+    m_Localized: No-rewind clear
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1924591085776921
+    m_Localized: Rewound clear
     m_Metadata:
       m_Items: []
   references:

@@ -56,6 +56,7 @@ namespace mumu
             if (strollButton != null)
             {
                 strollButton.SetOnClick(onClickStrollButton);
+                showStrollChances();
             }
             if (gardenButton != null)
             {
@@ -168,6 +169,22 @@ namespace mumu
         }
 
         /// <summary>
+        /// 今日のおさんぽの残りのチャンスを、おさんぽボタンの下に出す
+        /// </summary>
+        private void showStrollChances()
+        {
+            TMPro.TMP_Text label = FloatText.CreateLabel(strollButton.transform, TextLocalizer.Get("STROLL_CHANCES", GameSession.DailyStrollRemaining, GameSession.DailyStrollCount), new Color(0.29f, 0.17f, 0.06f));
+            if (label == null)
+            {
+                return;
+            }
+            var rect = (RectTransform)label.transform;
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = new Vector2(0f, -8f);
+        }
+
+        /// <summary>
         /// おさんぽを始める（今日のチャンスを使い切っていたら先に知らせる）
         /// </summary>
         private async UniTaskVoid startStrollAsync()
@@ -190,6 +207,10 @@ namespace mumu
             }
 
             GameSession.StartStroll();
+            if (GameSession.IsDailyStroll)
+            {
+                CommonUtility.PlaySe(eSe.StrollStart);
+            }
             ViewManager.Instance.ToGame().Forget();
         }
 

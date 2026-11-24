@@ -12,7 +12,7 @@
 param(
     [string]$Ids = '',
     [switch]$NoInstall,
-    [string]$Project = 'E:\testbranch\testdev\mumu'
+    [string]$Project = 'D:\test1\mumu'
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'SpriteMeta.ps1')

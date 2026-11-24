@@ -21,6 +21,8 @@ namespace UnityEngine
     public static class Mathf
     {
         public static int Clamp(int v, int a, int b) => Math.Min(Math.Max(v, a), b);
+        public static float Clamp(float v, float a, float b) => Math.Min(Math.Max(v, a), b);
+        public static int FloorToInt(float v) => (int)Math.Floor(v);
         public static float Clamp01(float v) => Math.Min(Math.Max(v, 0f), 1f);
         public static float Lerp(float a, float b, float t) => a + (b - a) * Clamp01(t);
         public static int RoundToInt(float v) => (int)Math.Round(v, MidpointRounding.ToEven);
@@ -59,6 +61,12 @@ namespace UnityEngine
 }
 namespace mumu
 {
+    /// マップ生成では読み込みを使わない（MapCsv の読み込みを通すための代用品）
+    public static class ResourceManager
+    {
+        public static T LoadResource<T>(string _path, bool _logIfMissing = true) where T : class => null;
+    }
+
     /// 方向の表（GridUtility.cs は UI を含むので、マップ生成に必要な分だけ置く）
     public static class GridUtility
     {

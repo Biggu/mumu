@@ -6,22 +6,21 @@ namespace mumu
 {
     /// <summary>
     /// マップのテーマ画像
-    /// Sprites/Themes/theme_{id:000000}/{id:000000}_{番号}: 0 = 未通過, 1 = 通過済み, 2〜5 = デコ1〜4（透明背景）, 6 = 水, 7 = 通れないブロック, 8 = 橋, bg = 背景
-    /// デコ1・2（_2・_3）はコマ送りのスプライトシート（4コマ）
+    /// Sprites/Themes/theme_{id:000000}/{id:000000}_{番号}: 0 = 未通過, 1 = 通過済み, 2〜5 = 高いデコ（コマ送りのシート）, 6〜7 = 普通のデコ, 8〜9 = 小さいデコ（静止画）, 10 = 水, 11 = 通れないブロック, 12 = 橋, bg = 背景
     /// </summary>
     public class ThemeSprites
     {
         public const int UntouchedIndex = 0;
         public const int TouchedIndex = 1;
         public const int DecoStartIndex = 2;
-        public const int DecoCount = 4;
-        /// <summary>デコのうち、最初の何個をコマ送りにするか（_2・_3）</summary>
-        public const int AnimatedDecoCount = 2;
+        public const int DecoCount = 8;
+        /// <summary>デコのうち、最初の何個をコマ送りにするか（_2〜_5 の高いデコ）</summary>
+        public const int AnimatedDecoCount = 4;
         /// <summary>コマ送りの速さ（秒あたりのコマ数）</summary>
         public const float DecoFps = 6f;
-        public const int WaterIndex = 6;
-        public const int ObstructIndex = 7;
-        public const int BridgeIndex = 8;
+        public const int WaterIndex = 10;
+        public const int ObstructIndex = 11;
+        public const int BridgeIndex = 12;
         public const string BackgroundSuffix = "bg";
 
         /// <summary>未通過</summary>
@@ -42,6 +41,8 @@ namespace mumu
         public Sprite Background { get; private set; }
         /// <summary>背景のコマ送りの絵（きらめき・4コマ）</summary>
         public Sprite[] BackgroundFrames { get; private set; }
+        /// <summary>背景の色合い（ボーナスは金色）</summary>
+        public Color Tint { get; private set; } = Color.white;
 
         /// <summary>
         /// デコ画像（コマ送りのデコは1コマ目）
@@ -105,6 +106,7 @@ namespace mumu
                 Bridge = results[4],
                 Background = backgroundFrames[0],
                 BackgroundFrames = backgroundFrames,
+                Tint = ThemeDefine.GetTint(_themeId),
                 Decos = new Sprite[DecoCount],
                 DecoFrames = new Sprite[DecoCount][],
             };

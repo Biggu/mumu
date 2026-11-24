@@ -41,6 +41,10 @@ namespace mumu
         public int height;
         /// <summary>難易度（Goal に入れる通過数の割合に使う）</summary>
         public int difficulty = 1;
+        /// <summary>ボーナスステージか（Goal までの割合が少なく、宝箱のほねが倍になる）</summary>
+        public bool isBonus = false;
+        /// <summary>テーマの中の順番（0 = 1ステージ目）。Goal 解放の割合に使う</summary>
+        public int goalStep = 0;
         /// <summary>ブロック種別（y * width + x）</summary>
         public eBlockType[] blockTypes;
         /// <summary>マスごとの追加情報（y * width + x）</summary>
@@ -511,7 +515,7 @@ namespace mumu
                     _error = $"{colorName} warp needs exactly one entrance and one exit (entrance {ins}, exit {outs})";
                     return false;
                 }
-                if (CountSubType(GimmickUtility.Gates[color]) > 0 && CountSubType(GimmickUtility.Keys[color]) == 0)
+                if (CountSubType(GimmickUtility.Gates[color]) > 0 && CountSubType(GimmickUtility.Keys[color]) + CountSubType(GimmickUtility.Switches[color]) == 0)
                 {
                     TryFindSubType(GimmickUtility.Gates[color], out _errorCell);
                     _error = $"{colorName} gate has no {colorName.ToLowerInvariant()} key ({_errorCell.x},{_errorCell.y})";
@@ -615,7 +619,7 @@ namespace mumu
         {
             foreach (Vector2Int cell in _cells)
             {
-                if (HasSubType(cell.x, cell.y, GimmickUtility.Keys[_color]))
+                if (HasSubType(cell.x, cell.y, GimmickUtility.Keys[_color]) || HasSubType(cell.x, cell.y, GimmickUtility.Switches[_color]))
                 {
                     return true;
                 }

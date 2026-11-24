@@ -7,7 +7,7 @@
 #   出力フォルダに sheet_*.png（一覧プレビュー）も作る
 param(
     [switch]$NoInstall,
-    [string]$Project = 'E:\testmodel\dev\mumu'
+    [string]$Project = 'D:\test1\mumu'
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'SpriteMeta.ps1')

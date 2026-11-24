@@ -15,9 +15,12 @@ namespace mumu
         public bool Key;
         public bool Warp;
         public bool Crumble;
+        public bool OneWay;
+        public bool Switch;
+        public bool Fog;
 
         /// <summary>どれか使うか（宝箱は指定がなくても必ず1つ置く）</summary>
-        public bool IsAny => Arrow || Turn || Straight || Key || Warp || Crumble;
+        public bool IsAny => Arrow || Turn || Straight || Key || Warp || Crumble || OneWay || Switch || Fog;
     }
 
     /// <summary>
@@ -29,6 +32,8 @@ namespace mumu
         private const float ArrowRate = 0.06f;
         private const float TurnRate = 0.05f;
         private const float StraightRate = 0.04f;
+        private const float OneWayRate = 0.04f;
+        private const float FogRate = 0.05f;
         /// <summary>自動生成で置く宝箱の数（必ず1つ）</summary>
         private const int TreasuresPerMap = 1;
 
@@ -42,9 +47,15 @@ namespace mumu
         /// <summary>ワープの組の数（最大3色）</summary>
         public int Warps;
         public int Crumbles;
+        /// <summary>一方通行の数</summary>
+        public int OneWays;
+        /// <summary>カギの代わりにスイッチで開ける組の数（Keys の中から選ぶ）</summary>
+        public int Switches;
+        /// <summary>霧の数</summary>
+        public int Fogs;
 
         /// <summary>合計</summary>
-        public int Total => Arrows + Turns + Straights + Treasures + Keys + Warps + Crumbles;
+        public int Total => Arrows + Turns + Straights + Treasures + Keys + Warps + Crumbles + OneWays + Fogs;
 
         /// <summary>
         /// 経路の長さに合わせた数
@@ -53,15 +64,20 @@ namespace mumu
         /// <param name="_settings"></param>
         public static GimmickCounts FromPath(int _waypoints, GimmickSettings _settings)
         {
+            // カギと扉の組（スイッチだけの時は1組。スイッチは組の中で、カギの代わりに置く）
+            int pairs = _settings.Key ? (_waypoints >= 30 ? 2 : 1) : (_settings.Switch ? 1 : 0);
             return new GimmickCounts
             {
                 Arrows = _settings.Arrow ? Mathf.Max(1, Mathf.RoundToInt(_waypoints * ArrowRate)) : 0,
                 Turns = _settings.Turn ? Mathf.Max(1, Mathf.RoundToInt(_waypoints * TurnRate)) : 0,
                 Straights = _settings.Straight ? Mathf.Max(1, Mathf.RoundToInt(_waypoints * StraightRate)) : 0,
                 Treasures = TreasuresPerMap,
-                Keys = _settings.Key ? (_waypoints >= 30 ? 2 : 1) : 0,
+                Keys = pairs,
                 Warps = _settings.Warp ? (_waypoints >= 40 ? 2 : 1) : 0,
                 Crumbles = _settings.Crumble ? Mathf.Clamp(_waypoints / 25, 1, 2) : 0,
+                OneWays = _settings.OneWay ? Mathf.Max(1, Mathf.RoundToInt(_waypoints * OneWayRate)) : 0,
+                Switches = _settings.Switch ? 1 : 0,
+                Fogs = _settings.Fog ? Mathf.Max(1, Mathf.RoundToInt(_waypoints * FogRate)) : 0,
             };
         }
 
@@ -70,7 +86,7 @@ namespace mumu
         /// </summary>
         public override string ToString()
         {
-            return $"arrow {Arrows}, turn {Turns}, straight {Straights}, treasure {Treasures}, key {Keys}, warp {Warps}, crumble {Crumbles}";
+            return $"arrow {Arrows}, turn {Turns}, straight {Straights}, treasure {Treasures}, key {Keys}, switch {Switches}, warp {Warps}, crumble {Crumbles}, oneway {OneWays}, fog {Fogs}";
         }
     }
 }

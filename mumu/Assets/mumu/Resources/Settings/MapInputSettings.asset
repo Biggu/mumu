@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: MapInputSettings
   m_EditorClassIdentifier: 
   DragDelayPerBlock: 0.1
+  DragRewindDelayPerBlock: 0.35
   NoDragRange: 2
   DragStepRate: 0.5
   DefaultZoomRate: 1.5
@@ -24,7 +25,7 @@ MonoBehaviour:
   PanLimitRate: 0.8
   FocusDuration: 0.35
   AutoFocusNearEdge: 1
-  AutoFocusEdgeMarginRate: 0.1
+  AutoFocusEdgeMarginRate: 0.193
   AutoFocusCooldown: 0.75
   ScrollZoomStep: 1.1
   MaxScrollDelta: 3
@@ -32,3 +33,8 @@ MonoBehaviour:
   TapMaxDuration: 0.3
   DoubleTapInterval: 0.35
   DoubleTapDistance: 80
+  TouchPadSize: 60
+  TouchPadMaxDistance: 30
+  TouchPadAlpha: 0.25
+  TouchPadEnabled: 1
+  TouchPadMargin: 40

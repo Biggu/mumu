@@ -108,6 +108,17 @@ namespace mumu
         WarpOutYellow,
         /// <summary>こわれる橋（降りると壊れて、そこより前には戻れない）</summary>
         Crumble,
+        /// <summary>スイッチ（赤・青・黄。経路で通ると同じ色の扉が開く。カギと同じ）</summary>
+        SwitchRed,
+        SwitchBlue,
+        SwitchYellow,
+        /// <summary>一方通行（やじるしと同じ決まり。決めた向きへ進む時だけ通れる）</summary>
+        OneWayUp,
+        OneWayDown,
+        OneWayLeft,
+        OneWayRight,
+        /// <summary>霧（経路がそのマスか隣に来るまで隠れる。巻き戻すとまた隠れる。見た目だけ）</summary>
+        Fog,
     }
 
     /// <summary>

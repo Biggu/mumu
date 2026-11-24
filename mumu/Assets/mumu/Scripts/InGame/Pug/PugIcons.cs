@@ -22,7 +22,7 @@ namespace mumu
             if (icons == null)
             {
                 icons = new Dictionary<int, Sprite>();
-                foreach (Sprite sprite in Resources.LoadAll<Sprite>(Folder))
+                foreach (Sprite sprite in ResourceManager.LoadResourceAll<Sprite>(Folder))
                 {
                     if (sprite.name.StartsWith(Prefix) && int.TryParse(sprite.name.Substring(Prefix.Length), out int id))
                     {

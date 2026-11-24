@@ -160,6 +160,13 @@ namespace mumu
 
             // デバッグマップ（マップ編集の Save Debug で保存したもの）
             Add("デバッグマップを 読み込んで 遊ぶ", playDebugMap);
+
+            // ギミックのテスト（障害物なし。1種類ずつ5×5の一本道）
+            foreach (string piece in GimmickTestMap.Pieces)
+            {
+                string name = piece;
+                Add("ギミックテスト: " + name, () => playMap(GimmickTestMap.Build(name)));
+            }
         }
 
         /// <summary>
@@ -281,6 +288,17 @@ namespace mumu
         }
 
         /// <summary>
+        /// 渡したマップを、おさんぽとして遊ぶ（デバッグ。クリアしても冒険の進みは変わらない）
+        /// </summary>
+        /// <param name="_map"></param>
+        private static void playMap(MapData _map)
+        {
+            pendingMap = _map;
+            GameSession.StartStroll();
+            ViewManager.Instance.ToGameWithFade().Forget();
+        }
+
+        /// <summary>
         /// デバッグマップを読み込んで、おさんぽとして遊ぶ（クリアしても冒険の進みは変わらない）
         /// </summary>
         private static void playDebugMap()
@@ -300,8 +318,8 @@ namespace mumu
         /// </summary>
         private static MapData loadDebugMap()
         {
-            var listAsset = Resources.Load<TextAsset>(DebugMapFolder + "debug_map_list");
-            var mapAsset = Resources.Load<TextAsset>(DebugMapFolder + "debug_map");
+            var listAsset = ResourceManager.LoadResource<TextAsset>(DebugMapFolder + "debug_map_list");
+            var mapAsset = ResourceManager.LoadResource<TextAsset>(DebugMapFolder + "debug_map");
             if (listAsset == null || mapAsset == null)
             {
                 Debug.LogError("[DebugTools] デバッグマップがありません（マップ編集の Save Debug で保存する）");

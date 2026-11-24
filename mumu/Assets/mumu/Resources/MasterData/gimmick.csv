@@ -1,8 +1,11 @@
 id,key,name_ja,name_en,desc_ja,desc_en,sprite,unlock_stage
-1,arrow,やじるし,One-way,やじるしの むきにしか とおれないよ。,You can only pass in the arrow's direction.,gimmick_arrow,4
-2,turn,まがりかど,Turn,この マスでは かならず まがってね。,You must turn on this tile.,gimmick_turn,7
-3,straight,まっすぐ,Straight,この マスは まっすぐ とおりぬけてね。,Go straight through this tile.,gimmick_straight,10
-4,treasure,たからばこ,Treasure,とおると ほねが もらえるよ。きの はこ 2こ・ぎんの はこ 4こ・きんの はこ 10こ！,Walk over a chest to get bones: wood 2 / silver 4 / gold 10!,gimmick_treasure3,0
-5,key,カギと とびら,Key & Gate,おなじ いろの カギを とおると とびらが ひらくよ。,Pass the key to open the gate of the same color.,gimmick_key,13
-6,warp,ワープ,Warp,いりぐちに のると でぐちへ とぶよ。でぐちを もう とおっていたら とばないよ。,Step on the entrance to jump to the exit (unless you already passed the exit).,gimmick_warp_in,16
-7,crumble,こわれる はし,Crumbling Bridge,おりると こわれて もう もどれないよ。,It breaks after you step off. No going back!,gimmick_crumble,19
+1,arrow,矢印,One-way,矢印の向きにしか通れないよ。,You can only pass in the arrow's direction.,gimmick_arrow,10
+2,turn,曲がり角,Turn,このマスでは必ず曲がってね。,You must turn on this tile.,gimmick_turn,70
+3,straight,直進,Straight,このマスは直進で通り抜けてね。,Go straight through this tile.,gimmick_straight,110
+4,treasure,宝箱,Treasure,宝箱を通るとほねがもらえるよ。金の箱ほど多いよ！,Walk over a chest to get bones. Gold chests give the most!,gimmick_treasure3,0
+5,key,カギと扉,Key & Gate,同じ色のカギを通ると扉が開くよ。,Pass the key to open the gate of the same color.,gimmick_key,20
+6,warp,ワープ,Warp,入口に乗ると出口へ飛ぶよ。出口をもう通っていたら飛ばないよ。,Step on the entrance to jump to the exit (unless you already passed the exit).,gimmick_warp_in,30
+7,crumble,壊れる橋,Crumbling Bridge,降りると壊れて、もう戻れないよ。,It breaks after you step off. No going back!,gimmick_crumble,130
+8,oneway,一方通行,One-way Gate,決めた向きに進む時だけ通れるよ。,You can only pass in the marked direction.,gimmick_oneway,180
+9,switch,スイッチ,Switch,スイッチを通ると同じ色の扉が開くよ。,Pass the switch to open the gate of the same color.,gimmick_switch,140
+10,fog,霧,Fog,霧のマスは、隣を通ると見えるようになるよ。,A foggy tile becomes visible once you pass it or a tile next to it.,gimmick_fog,170

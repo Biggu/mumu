@@ -14,7 +14,7 @@ x,y,type,waypoint,gimmick
 2,1,Obstruct2,,
 3,1,Walkable,11,WarpInBlue
 4,1,Empty,,
-5,1,Walkable,2,ArrowDown
+5,1,Walkable,2,
 6,1,Walkable,5,
 7,1,Walkable,6,WarpInRed
 8,1,Empty,,
@@ -43,7 +43,7 @@ x,y,type,waypoint,gimmick
 1,4,Walkable,,
 2,4,Walkable,13,
 3,4,Walkable,14,
-4,4,Walkable,15,ArrowRight
+4,4,Walkable,15,
 5,4,Walkable,16,
 6,4,Walkable,17,
 7,4,Walkable,18,
@@ -76,7 +76,7 @@ x,y,type,waypoint,gimmick
 4,7,Obstruct4,,
 5,7,Walkable,33,
 6,7,Walkable,28,
-7,7,Walkable,25,ArrowDown
+7,7,Walkable,25,Treasure1
 8,7,Empty,,
 9,7,Empty,,
 0,8,Empty,,
@@ -94,7 +94,7 @@ x,y,type,waypoint,gimmick
 2,9,Empty,,
 3,9,Empty,,
 4,9,Walkable,36,
-5,9,Walkable,35,Treasure1
+5,9,Walkable,35,
 6,9,Empty,,
 7,9,Empty,,
 8,9,Empty,,

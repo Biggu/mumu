@@ -121,6 +121,40 @@ public static class Program
             Check(p.Head == V(3, 0) && !p.IsWarpArrival(3), "no warp when exit already passed");
             Check(p.MoveTo(V(4, 0)) == eMoveResult.Added, "continue as a normal cell");
         }
+        {   // switch: opens the gate of the same color, like a key
+            var tm = Corridor(4, 2); Walk(tm, (1, 0), (2, 0), (0, 1), (1, 1));
+            tm.SetBlockType(0, 0, eBlockType.Start); tm.SetBlockType(3, 0, eBlockType.Goal);
+            tm.AddBlockSubType(1, 0, eBlockSubType.GateBlue); tm.AddBlockSubType(0, 1, eBlockSubType.SwitchBlue);
+            var p = new PuzzlePath(tm);
+            Check(!p.CanAdvanceTo(V(1, 0)), "switch: gate closed before the switch");
+            p.MoveTo(V(0, 1)); p.MoveTo(V(1, 1));
+            Check(p.CanAdvanceTo(V(1, 0)), "switch: gate open after the switch");
+        }
+        {   // switch of another color does not open the gate
+            var tm = Corridor(4, 2); Walk(tm, (1, 0), (2, 0), (0, 1), (1, 1));
+            tm.SetBlockType(0, 0, eBlockType.Start); tm.SetBlockType(3, 0, eBlockType.Goal);
+            tm.AddBlockSubType(1, 0, eBlockSubType.GateRed); tm.AddBlockSubType(0, 1, eBlockSubType.SwitchBlue);
+            var p = new PuzzlePath(tm);
+            p.MoveTo(V(0, 1)); p.MoveTo(V(1, 1));
+            Check(!p.CanAdvanceTo(V(1, 0)), "switch: blue switch does not open red gate");
+        }
+        {   // one-way: passes only in its direction, same rule as an arrow
+            var tm = Corridor(4, 1); Walk(tm, (1, 0), (2, 0));
+            tm.SetBlockType(0, 0, eBlockType.Start); tm.SetBlockType(3, 0, eBlockType.Goal);
+            tm.AddBlockSubType(1, 0, eBlockSubType.OneWayRight);
+            var p = new PuzzlePath(tm);
+            Check(p.CanAdvanceTo(V(1, 0)), "one-way: allowed in its direction");
+            p.MoveTo(V(1, 0));
+            Check(p.CanAdvanceTo(V(2, 0)), "one-way: continue in its direction");
+        }
+        {   // one-way: entering from the side is refused
+            var tm = Corridor(4, 2); Walk(tm, (1, 0), (2, 0), (0, 1), (1, 1));
+            tm.SetBlockType(0, 0, eBlockType.Start); tm.SetBlockType(3, 0, eBlockType.Goal);
+            tm.AddBlockSubType(1, 0, eBlockSubType.OneWayRight);
+            var p = new PuzzlePath(tm);
+            p.MoveTo(V(0, 1)); p.MoveTo(V(1, 1));
+            Check(!p.CanAdvanceTo(V(1, 0)), "one-way: refused from the side");
+        }
         Console.WriteLine($"rule tests failed: {ruleFail}");        // plain generation (no gimmick options) must still place exactly one treasure, with valid tier distribution
         int plainBad = 0; var tierCount = new int[3];
         foreach (eMapPattern pattern in Enum.GetValues(typeof(eMapPattern)))

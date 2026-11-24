@@ -97,12 +97,21 @@ namespace mumu
                     continue;
                 }
                 Vector2Int key = keyCandidates[_random.Next(keyCandidates.Count)];
+                // スイッチの数まではカギの代わりにスイッチを置く（開け方が違うだけで、経路で通ると開く）
+                bool useSwitch = placed.Switches < _counts.Switches;
                 _mapData.AddBlockSubType(gate.x, gate.y, GimmickUtility.Gates[color]);
-                _mapData.AddBlockSubType(key.x, key.y, GimmickUtility.Keys[color]);
+                _mapData.AddBlockSubType(key.x, key.y, useSwitch ? GimmickUtility.Switches[color] : GimmickUtility.Keys[color]);
                 free.Remove(gate);
                 straights.Remove(gate);
                 turns.Remove(gate);
-                placed.Keys++;
+                if (useSwitch)
+                {
+                    placed.Switches++;
+                }
+                else
+                {
+                    placed.Keys++;
+                }
             }
 
             // こわれる橋（最初の数マスは避ける）
@@ -121,6 +130,12 @@ namespace mumu
                 _mapData.AddBlockSubType(cell.x, cell.y, GimmickUtility.ToArrow(cells[index + 1] - cell));
                 placed.Arrows++;
             }
+            foreach (Vector2Int cell in pick(straights, weights, _counts.OneWays, _random))
+            {
+                int index = cells.IndexOf(cell);
+                _mapData.AddBlockSubType(cell.x, cell.y, GimmickUtility.ToOneWay(cells[index + 1] - cell));
+                placed.OneWays++;
+            }
             foreach (Vector2Int cell in pick(straights, weights, _counts.Straights, _random))
             {
                 _mapData.AddBlockSubType(cell.x, cell.y, eBlockSubType.Straight);
@@ -130,6 +145,24 @@ namespace mumu
             {
                 _mapData.AddBlockSubType(cell.x, cell.y, eBlockSubType.Turn);
                 placed.Turns++;
+            }
+
+            // 霧は経路の上のギミックのないマス（最初の数マスは避ける）
+            var fogCandidates = new List<Vector2Int>();
+            var fogWeights = new Dictionary<Vector2Int, int>();
+            for (int i = 2; i < cells.Count - 2; i++)
+            {
+                Vector2Int cell = cells[i];
+                if (_mapData.GetBlockType(cell.x, cell.y) == eBlockType.Walkable && _mapData.GetBlockSubTypes(cell.x, cell.y).Count == 0)
+                {
+                    fogCandidates.Add(cell);
+                    fogWeights[cell] = weights.TryGetValue(cell, out int fogWeight) ? fogWeight : 1;
+                }
+            }
+            foreach (Vector2Int cell in pick(fogCandidates, fogWeights, _counts.Fogs, _random))
+            {
+                _mapData.AddBlockSubType(cell.x, cell.y, eBlockSubType.Fog);
+                placed.Fogs++;
             }
 
             // 宝箱は設計した経路の上（必ず取れる）。カギと同じマスは避け、ほかに道がある所ほど選ばれやすい

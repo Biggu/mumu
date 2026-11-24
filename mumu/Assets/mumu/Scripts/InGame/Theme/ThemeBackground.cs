@@ -19,6 +19,11 @@ namespace mumu
         public static void Show(Image _image, ThemeSprites _sprites)
         {
             UiImageUtility.SetTiled(_image, _sprites.Background);
+            // 金色などの色合いのテーマだけ色を変える（ふつうのテーマは Prefab の色のまま）
+            if (_image != null && _sprites.Tint != Color.white)
+            {
+                _image.color = _sprites.Tint;
+            }
             if (_image == null || _sprites.BackgroundFrames == null)
             {
                 return;

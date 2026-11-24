@@ -17,7 +17,7 @@ x,y,type,waypoint,gimmick
 3,1,Obstruct3,,
 4,1,Water,,
 5,1,Water,,
-6,1,Walkable,53,Treasure1
+6,1,Walkable,53,Straight
 7,1,Walkable,56,
 8,1,Obstruct2,,
 9,1,Goal,,
@@ -45,7 +45,7 @@ x,y,type,waypoint,gimmick
 7,3,Walkable,50,GateBlue
 8,3,Walkable,59,
 9,3,Walkable,60,
-10,3,Walkable,63,
+10,3,Walkable,63,Straight
 11,3,Walkable,68,ArrowUp
 0,4,Walkable,7,
 1,4,Walkable,8,
@@ -87,7 +87,7 @@ x,y,type,waypoint,gimmick
 1,7,Water,,
 2,7,Obstruct4,,
 3,7,Walkable,18,ArrowUp
-4,7,Walkable,15,
+4,7,Walkable,15,Treasure1
 5,7,Walkable,34,
 6,7,Bridge,35,
 7,7,Walkable,36,
@@ -107,7 +107,7 @@ x,y,type,waypoint,gimmick
 9,8,Walkable,39,
 10,8,Walkable,40,
 11,8,Obstruct1,,
-0,9,Walkable,2,
+0,9,Walkable,2,Straight
 1,9,Walkable,22,ArrowDown
 2,9,Water,,
 3,9,Walkable,30,

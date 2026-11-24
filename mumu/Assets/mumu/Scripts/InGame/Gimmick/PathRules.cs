@@ -80,7 +80,7 @@ namespace mumu
 
             // 入る時は向きだけ（出る向きはまだ決まっていない）
             eBlockSubType cellRoute = GimmickUtility.GetRoute(mapData.GetBlockSubTypes(_cell.x, _cell.y));
-            return !GimmickUtility.IsArrow(cellRoute) || GimmickUtility.IsAllowed(cellRoute, step, Vector2Int.zero);
+            return !GimmickUtility.IsArrowLike(cellRoute) || GimmickUtility.IsAllowed(cellRoute, step, Vector2Int.zero);
         }
     }
 }

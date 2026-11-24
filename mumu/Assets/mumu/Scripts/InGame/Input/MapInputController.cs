@@ -50,6 +50,16 @@ namespace mumu
 
         /// <summary>経路ドラッグ中のプレビュー線</summary>
         private RectTransform dragPreview = null;
+        /// <summary>経路をドラッグしている指の下の淡い丸（離すと消える）</summary>
+        private RectTransform touchPad = null;
+        /// <summary>経路をドラッグした量（押した場所から今の指まで。つまみはこの向きに動く）</summary>
+        private Vector2 touchPadDragOffset = Vector2.zero;
+        private const string TouchPadPath = "Prefabs/Common/touch_pad";
+        private const string TouchPadSpritePath = "Sprites/UI/ui_button_round";
+        /// <summary>つまみの大きさ（輪の大きさに対する割合）</summary>
+        private const float KnobSizeRate = 0.5f;
+        /// <summary>つまみの濃さ（輪の透明度に対する倍率。1 を超えたら 1 まで）</summary>
+        private const float KnobAlphaRate = 2f;
         /// <summary>プレビュー開始時の指の位置（コンテンツ座標）。指の移動量だけを線に反映する</summary>
         private Vector2 dragPreviewStartPointerContent = Vector2.zero;
         /// <summary>プレビュー開始時に記録した経路 Head。Head が変わったらプレビューをリセットする</summary>
@@ -89,6 +99,7 @@ namespace mumu
         /// </summary>
         private void Update()
         {
+            refreshTouchPad();
             bool isSpaceHeld = canPanWithSinglePointer();
             if (isSpaceHeld == wasSpaceHeld)
             {
@@ -211,6 +222,7 @@ namespace mumu
             {
                 routeFingerPosition = _eventData.position;
                 showDragPreview(_eventData.position);
+                touchPadDragOffset = _eventData.position - _eventData.pressPosition;
                 dragPath(_eventData.position);
                 return;
             }
@@ -454,6 +466,94 @@ namespace mumu
                 Destroy(dragPreview.gameObject);
                 dragPreview = null;
             }
+            touchPadDragOffset = Vector2.zero;
+        }
+
+        /// <summary>
+        /// 画面の左下に、いつも輪を出す（設定でオフにできる）。経路をドラッグした向きにつまみが動く
+        /// </summary>
+        private void refreshTouchPad()
+        {
+            MapInputSettings settings = MapInputSettings.Current;
+            var parent = view != null ? view.transform as RectTransform : null;
+            if (!settings.TouchPadEnabled || parent == null)
+            {
+                hideTouchPad();
+                return;
+            }
+
+            if (touchPad == null)
+            {
+                GameObject prefab = ResourceManager.Instance.Load<GameObject>(TouchPadPath);
+                if (prefab == null)
+                {
+                    return;
+                }
+                GameObject go = Instantiate(prefab, parent, false);
+                touchPad = (RectTransform)go.transform;
+                Sprite circle = ResourceManager.Instance.Load<Sprite>(TouchPadSpritePath);
+                Image image = go.GetComponent<Image>();
+                if (image != null)
+                {
+                    image.sprite = circle;
+                }
+                Transform knobTransform = go.transform.Find("knob");
+                if (knobTransform != null)
+                {
+                    knobTransform.GetComponent<Image>().sprite = circle;
+                }
+            }
+
+            touchPad.gameObject.SetActive(true);
+            touchPad.sizeDelta = new Vector2(settings.TouchPadSize, settings.TouchPadSize);
+            Image padImage = touchPad.GetComponent<Image>();
+            if (padImage != null)
+            {
+                padImage.color = new Color(1f, 1f, 1f, settings.TouchPadAlpha);
+            }
+
+            // 輪は画面の左下（余白 TouchPadMargin）に固定する
+            float half = settings.TouchPadSize * 0.5f;
+            Vector2 corner = new Vector2(settings.TouchPadMargin + half, settings.TouchPadMargin + half);
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, corner, eventCamera, out Vector2 ringLocal))
+            {
+                return;
+            }
+            touchPad.anchoredPosition = ringLocal;
+
+            // つまみは経路をドラッグした向き（TouchPadMaxDistance まで）に動く
+            Transform knob = touchPad.Find("knob");
+            if (knob == null)
+            {
+                return;
+            }
+            var knobRect = (RectTransform)knob;
+            knobRect.sizeDelta = new Vector2(settings.TouchPadSize * KnobSizeRate, settings.TouchPadSize * KnobSizeRate);
+            Vector2 offset = touchPadDragOffset;
+            if (offset.magnitude > settings.TouchPadMaxDistance)
+            {
+                offset = offset.normalized * settings.TouchPadMaxDistance;
+            }
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, corner + offset, eventCamera, out Vector2 knobLocal))
+            {
+                knobRect.anchoredPosition = knobLocal - ringLocal;
+            }
+            Image knobImage = knob.GetComponent<Image>();
+            if (knobImage != null)
+            {
+                knobImage.color = new Color(1f, 1f, 1f, Mathf.Min(1f, settings.TouchPadAlpha * KnobAlphaRate));
+            }
+        }
+
+        /// <summary>
+        /// 輪を消す（設定でオフの時）
+        /// </summary>
+        private void hideTouchPad()
+        {
+            if (touchPad != null)
+            {
+                touchPad.gameObject.SetActive(false);
+            }
         }
 
 /// <summary>
@@ -463,14 +563,15 @@ namespace mumu
 /// <param name="_position"></param>
 private void dragPath(Vector2 _position)
         {
-            // Wait between route steps, without changing the drag origin.
-            float delay = MapInputSettings.Current.DragDelayPerBlock;
-            if (delay > 0f && Time.unscaledTime - lastStepTime < delay)
+            if (!map.TryGetDragDirection(lastPathPosition, _position, eventCamera, out Vector2Int direction))
             {
                 return;
             }
 
-            if (!map.TryGetDragDirection(lastPathPosition, _position, eventCamera, out Vector2Int direction))
+            // Wait between route steps, without changing the drag origin. Going back uses its own delay.
+            MapInputSettings settings = MapInputSettings.Current;
+            float delay = map.IsRewindDirection(direction) ? settings.DragRewindDelayPerBlock : settings.DragDelayPerBlock;
+            if (delay > 0f && Time.unscaledTime - lastStepTime < delay)
             {
                 return;
             }

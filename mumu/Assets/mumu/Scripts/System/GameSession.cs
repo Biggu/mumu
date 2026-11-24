@@ -30,6 +30,8 @@ namespace mumu
         private static int strollDifficulty = MapGenerator.MinDifficulty;
         private static eMapPattern strollPattern = eMapPattern.Square;
         private static int strollSeed = 0;
+        /// <summary>おさんぽのマップの、テーマの中の順番（Goal 解放の割合に使う）</summary>
+        private static int strollStep = 0;
         private static int strollThemeId = ThemeDefine.DefaultThemeId;
         /// <summary>おさんぽのマップで待っているパグ（0 = いつもの女の子で報酬なし）</summary>
         private static int strollRewardId = 0;
@@ -42,6 +44,12 @@ namespace mumu
         public static int DailyStrollNumber { get; private set; }
         /// <summary>冒険でクリアしたステージ（ステージマップで次のステージまで歩く、-1 = なし）</summary>
         public static int WalkFromIndex { get; set; } = -1;
+        /// <summary>冒険で、クリア済みのステージをもう一度遊んでいるか（進みは変わらない）</summary>
+        public static bool IsReplay { get; private set; } = false;
+        /// <summary>もう一度遊ぶステージ（0 始まり）</summary>
+        public static int ReplayIndex { get; private set; } = -1;
+        /// <summary>今遊んでいる冒険のステージ番号（1 始まり。もう一度遊ぶ時はそのステージ）</summary>
+        public static int PlayedStageNumber => Mode == eGameMode.Adventure && IsReplay ? ReplayIndex + 1 : StageProgress.CurrentNumber;
 
         /// <summary>今日の残りのチャンス</summary>
         public static int DailyStrollRemaining
@@ -59,6 +67,18 @@ namespace mumu
         public static void StartAdventure()
         {
             Mode = eGameMode.Adventure;
+            IsReplay = false;
+        }
+
+        /// <summary>
+        /// クリア済みの冒険のステージをもう一度遊ぶ（クリアしても進みは変わらない）
+        /// </summary>
+        /// <param name="_index"></param>
+        public static void StartReplay(int _index)
+        {
+            Mode = eGameMode.Adventure;
+            IsReplay = true;
+            ReplayIndex = _index;
         }
 
         /// <summary>
@@ -67,6 +87,7 @@ namespace mumu
         public static void StartStroll()
         {
             Mode = eGameMode.Stroll;
+            IsReplay = false;
             NextStroll();
         }
 
@@ -90,12 +111,36 @@ namespace mumu
             var patterns = (eMapPattern[])Enum.GetValues(typeof(eMapPattern));
             strollPattern = patterns[random.Next(patterns.Length)];
             strollSeed = random.Next(int.MinValue, int.MaxValue);
+            strollStep = random.Next(MapGenerator.StepsPerBlock - 1);
 
-            var themeIds = new List<int>(ThemeDefine.ThemeIds);
+            var themeIds = unlockedThemeIds();
             strollThemeId = themeIds[random.Next(themeIds.Count)];
 
             // 当たりなら Goal でその子が待つ（やりなおしても同じ）
             strollRewardId = IsDailyStroll ? CharacterMaster.RollStrollReward(random) : 0;
+        }
+
+        /// <summary>
+        /// おさんぽのテーマの候補（これまでに遊んだ冒険のステージのテーマ。ボーナスは入れない）
+        /// </summary>
+        private static List<int> unlockedThemeIds()
+        {
+            var result = new List<int>();
+            List<MapInfo> list = MapCsv.LoadList();
+            int reached = Mathf.Min(list.Count, StageProgress.ClearedCount + 1);
+            for (int i = 0; i < reached; i++)
+            {
+                MapInfo info = list[i];
+                if (!info.IsBonus && !result.Contains(info.ThemeId))
+                {
+                    result.Add(info.ThemeId);
+                }
+            }
+            if (result.Count == 0)
+            {
+                result.Add(ThemeDefine.DefaultThemeId);
+            }
+            return result;
         }
 
         /// <summary>
@@ -137,12 +182,13 @@ namespace mumu
 #endif
             if (Mode == eGameMode.Adventure)
             {
-                return StageProgress.LoadCurrentMap();
+                return IsReplay ? StageProgress.LoadMapAt(ReplayIndex) : StageProgress.LoadCurrentMap();
             }
 
             var mapData = ScriptableObject.CreateInstance<MapData>();
             MapGenerator.Generate(mapData, strollDifficulty, strollPattern, strollSeed, false, GimmickMaster.GetStrollSettings());
             mapData.themeId = strollThemeId;
+            mapData.goalStep = strollStep;
             return mapData;
         }
 
@@ -153,6 +199,12 @@ namespace mumu
         {
             if (Mode == eGameMode.Adventure)
             {
+                // もう一度遊んだステージは、進みを変えない（歩く演出もなし）
+                if (IsReplay)
+                {
+                    WalkFromIndex = -1;
+                    return;
+                }
                 WalkFromIndex = StageProgress.CurrentIndex;
                 StageProgress.Advance();
                 return;

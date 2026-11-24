@@ -3,7 +3,7 @@
 #
 # 使い方: powershell -ExecutionPolicy Bypass -File run_deco_sheet_gen.ps1 [-Project <プロジェクトのパス>]
 param(
-    [string]$Project = 'E:\testmodel\dev\mumu'
+    [string]$Project = 'D:\test1\mumu'
 )
 $ErrorActionPreference = 'Stop'
 Add-Type -Path (Join-Path $PSScriptRoot '..\art\DecoSheetGen.cs') -ReferencedAssemblies System.Drawing

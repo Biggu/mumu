@@ -10,7 +10,7 @@ namespace mumu
     {
         /// <summary>se_000001: クリック（ボタン）</summary>
         Click = 1,
-        /// <summary>se_000002: 吠える1（パグを押した時などに使う。今は未使用）</summary>
+        /// <summary>se_000002: 吠える1（おにわでパグを押した時）</summary>
         Bark1 = 2,
         /// <summary>se_000003: 吠える2（進めない時）</summary>
         Bark2 = 3,
@@ -64,6 +64,32 @@ namespace mumu
         Footstep = 27,
         /// <summary>se_000028: 注意（今日のおさんぽが終わった）</summary>
         AlertChime = 28,
+        /// <summary>se_000029: 木の宝箱を拾った</summary>
+        ChestWood = 29,
+        /// <summary>se_000030: 銀の宝箱を拾った</summary>
+        ChestSilver = 30,
+        /// <summary>se_000031: 金の宝箱を拾った（豪華に）</summary>
+        ChestGold = 31,
+        /// <summary>se_000032: 宝箱を続けて拾った（連続音）</summary>
+        ChestCombo = 32,
+        /// <summary>se_000033: ボーナスステージが始まる</summary>
+        BonusEnter = 33,
+        /// <summary>se_000034: ボーナスステージをクリア（コインが降る）</summary>
+        BonusClear = 34,
+        /// <summary>se_000035: ヒントの2回目以降（少し高い音）</summary>
+        HintReveal = 35,
+        /// <summary>se_000036: 鍵のかかったステージを押した</summary>
+        LockedTap = 36,
+        /// <summary>se_000037: レアなパグが仲間になった</summary>
+        RareJoin = 37,
+        /// <summary>se_000038: 今日のおさんぽを始める</summary>
+        StrollStart = 38,
+        /// <summary>se_000039: 新しいテーマが始まる</summary>
+        ThemeWhoosh = 39,
+        /// <summary>se_000040: クリアしたステージをもう一度遊ぶ</summary>
+        ReplayStart = 40,
+        /// <summary>se_000041: 多く戻る時の確認が出る</summary>
+        RewindConfirm = 41,
 
         // 既存の呼び出し名（同じ番号の別名）
         Step = BlockGain,
@@ -238,7 +264,7 @@ namespace mumu
         {
             if (!bgmClips.TryGetValue(_id, out AudioClip clip))
             {
-                clip = Resources.Load<AudioClip>(GetBgmPath(_id));
+                clip = ResourceManager.LoadResource<AudioClip>(GetBgmPath(_id), false);
                 bgmClips[_id] = clip;
             }
             return clip;

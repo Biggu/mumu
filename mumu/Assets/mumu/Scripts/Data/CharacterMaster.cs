@@ -46,14 +46,14 @@ namespace mumu
         /// <summary>おさんぽでクリア時にパグがもらえる確率</summary>
         public const float StrollRewardRate = 0.2f;
         /// <summary>tier ごとのほねの値段（tier1〜6、0 = 交換できない）</summary>
-        private static readonly int[] TierPrices = { 200, 500, 1000, 5000, 20000, 0 };
+        private static readonly int[] TierPrices = { 200, 500, 1000, 2000, 5000, 0 };
         /// <summary>
         /// tier ごとのおさんぽで出る重み（tier1〜6、合計 100000 = 0.001% 単位）。
         /// tier5 = 0.5%、tier6 = 0.1%（2匹なので1匹 0.05%）
         /// </summary>
         private static readonly int[] TierWeights = { 59400, 28000, 10000, 2000, 500, 100 };
         /// <summary>もう持っている子をもらった時のほね（tier1〜6）</summary>
-        private static readonly int[] DuplicateBonesByTier = { 5, 10, 20, 50, 500, 10000 };
+        private static readonly int[] DuplicateBonesByTier = { 40, 100, 200, 1000, 4000, 10000 };
 
         private static List<CharacterData> characters = null;
 
@@ -173,7 +173,7 @@ namespace mumu
             }
 
             characters = new List<CharacterData>();
-            var asset = Resources.Load<TextAsset>($"{Folder}/character");
+            var asset = ResourceManager.LoadResource<TextAsset>($"{Folder}/character");
             if (asset == null)
             {
                 Debug.LogError($"[CharacterMaster] CSV not found: {Folder}/character");

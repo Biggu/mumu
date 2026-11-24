@@ -57,6 +57,10 @@ namespace mumu
 
         /// <summary>初期テーマ</summary>
         public const int DefaultThemeId = 1;
+        /// <summary>ボーナスステージのテーマ（金色。おさんぽや一覧のテーマ選びには入らない）</summary>
+        public const int BonusThemeId = 40;
+        /// <summary>ボーナスステージの背景の色合い（金色）</summary>
+        private static readonly Color BonusTint = new Color(1f, 0.84f, 0.4f, 1f);
 
         private static readonly AmbientSettings None = new AmbientSettings { Count = 0 };
 
@@ -191,6 +195,11 @@ namespace mumu
             { 17, new Info { Name = "moon_forest", Ambient = fireflies() } },
             { 18, new Info { Name = "castle", Ambient = embers() } },
             { 19, new Info { Name = "mountain", Ambient = leaves(new Color(0.8f, 0.85f, 0.7f, 0.8f), new Color(0.6f, 0.7f, 0.5f, 0.8f)) } },
+            { BonusThemeId, new Info { Name = "bonus", Ambient = new AmbientSettings
+                {
+                    Colors = new[] { new Color(1f, 0.85f, 0.3f, 0.95f), new Color(1f, 0.95f, 0.6f, 0.9f), Color.white },
+                    Size = new Vector2(7f, 7f), Count = 40, MinSpeed = 10f, MaxSpeed = 30f, Sway = 20f, Spin = true,
+                } } },
         };
 
         /// <summary>テーマごとの横切る生き物</summary>
@@ -222,7 +231,28 @@ namespace mumu
         }
 
         /// <summary>全テーマ ID</summary>
-        public static IEnumerable<int> ThemeIds => infos.Keys;
+        public static IEnumerable<int> ThemeIds
+        {
+            get
+            {
+                foreach (int id in infos.Keys)
+                {
+                    if (id != BonusThemeId)
+                    {
+                        yield return id;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// テーマの背景の色合い（ボーナスは金色、ほかは白 = そのまま）
+        /// </summary>
+        /// <param name="_themeId"></param>
+        public static Color GetTint(int _themeId)
+        {
+            return _themeId == BonusThemeId ? BonusTint : Color.white;
+        }
 
         /// <summary>
         /// テーマの横切る生き物

@@ -4,37 +4,37 @@ using UnityEngine;
 namespace mumu
 {
     /// <summary>
-    /// ヒント（設計した経路の一部）。Start 側 5%・Goal 側 5%・残りは seed でランダム（合計 40%）
+    /// ヒント（設計した経路の両端）。N 回目は Start 側・Goal 側それぞれ 5% × N の割合（途中は出さない）
+    /// 使える回数は経路の長さで決まる（30 マス未満は 1 回、長いほど増えて最大 9 回）
     /// </summary>
     public class HintPlan
     {
-        /// <summary>ヒントに出す割合（経路全体）</summary>
-        public const float HintRate = 0.4f;
-        /// <summary>Start 側と Goal 側それぞれの割合</summary>
-        public const float EdgeRate = 0.05f;
-        /// <summary>途中に選ぶ区間の長さ（マス数）</summary>
-        private const int MinSegmentLength = 3;
-        private const int MaxSegmentLength = 6;
-        /// <summary>区間を選び直す回数の上限</summary>
-        private const int MaxSegmentAttempts = 200;
+        /// <summary>1 回使うごとに、Start 側と Goal 側それぞれ増える割合</summary>
+        public const float RatePerUse = 0.05f;
+        /// <summary>使える回数の上限</summary>
+        public const int MaxUses = 9;
+        /// <summary>2 回目以降を使うのに必要な経路の長さ（マス数）</summary>
+        public const int MinRouteForSecondUse = 30;
+        /// <summary>経路の長さ何マスごとに 1 回増えるか</summary>
+        public const int CellsPerUse = 15;
 
         private readonly Vector2Int[] designed;
         private readonly Dictionary<Vector2Int, int> indexByCell = new Dictionary<Vector2Int, int>();
         private readonly HashSet<int> hinted = new HashSet<int>();
 
         /// <summary>
-        /// 設計した経路（順番どおり）から、seed で決まるヒントを作る
+        /// 設計した経路（順番どおり）と、今まで使った回数からヒントを作る
         /// </summary>
         /// <param name="_designed"></param>
-        /// <param name="_seed"></param>
-        public HintPlan(Vector2Int[] _designed, int _seed)
+        /// <param name="_useCount">使った回数（0 なら何も出さない）</param>
+        public HintPlan(Vector2Int[] _designed, int _useCount)
         {
             designed = _designed;
             for (int i = 0; i < designed.Length; i++)
             {
                 indexByCell[designed[i]] = i;
             }
-            choose(_seed);
+            choose(_useCount);
         }
 
 #if UNITY_EDITOR
@@ -49,6 +49,19 @@ namespace mumu
             }
         }
 #endif
+
+        /// <summary>
+        /// 経路の長さから、使える回数の上限を求める
+        /// </summary>
+        /// <param name="_routeLength"></param>
+        public static int GetMaxUses(int _routeLength)
+        {
+            if (_routeLength < MinRouteForSecondUse)
+            {
+                return 1;
+            }
+            return Mathf.Min(MaxUses, _routeLength / CellsPerUse);
+        }
 
         /// <summary>
         /// 設計した経路の位置（順番どおり。見つからない番号は除く）
@@ -115,63 +128,23 @@ namespace mumu
         }
 
         /// <summary>
-        /// Start 側・Goal 側の5%と、残りを seed のランダムで選ぶ
+        /// Start 側・Goal 側それぞれ 5% × 使った回数（最低 1 マス）を出す
         /// </summary>
-        /// <param name="_seed"></param>
-        private void choose(int _seed)
+        /// <param name="_useCount"></param>
+        private void choose(int _useCount)
         {
             int total = designed.Length;
-            int edge = Mathf.RoundToInt(total * EdgeRate);
-            int count = Mathf.RoundToInt(total * HintRate);
+            if (_useCount <= 0 || total == 0)
+            {
+                return;
+            }
 
-            for (int i = 0; i < edge && i < total; i++)
+            int edge = Mathf.Clamp(Mathf.RoundToInt(total * RatePerUse * _useCount), 1, total);
+            for (int i = 0; i < edge; i++)
             {
                 hinted.Add(i);
                 hinted.Add(total - 1 - i);
             }
-
-            // 残りは途中の「つながった区間」をランダムに選ぶ（線で向きが分かるように）
-            var random = new System.Random(_seed);
-            int rest = count - hinted.Count;
-            int middleStart = edge;
-            int middleEnd = total - edge;
-            for (int attempt = 0; attempt < MaxSegmentAttempts && rest > 0 && middleEnd - middleStart > 0; attempt++)
-            {
-                int length = Mathf.Min(random.Next(MinSegmentLength, MaxSegmentLength + 1), rest);
-                int last = middleEnd - length;
-                if (last < middleStart)
-                {
-                    break;
-                }
-
-                int start = random.Next(middleStart, last + 1);
-                if (!isFree(start, length))
-                {
-                    continue;
-                }
-                for (int i = start; i < start + length; i++)
-                {
-                    hinted.Add(i);
-                }
-                rest -= length;
-            }
-        }
-
-        /// <summary>
-        /// 区間の全マスがまだヒントでないか
-        /// </summary>
-        /// <param name="_start"></param>
-        /// <param name="_length"></param>
-        private bool isFree(int _start, int _length)
-        {
-            for (int i = _start; i < _start + _length; i++)
-            {
-                if (hinted.Contains(i))
-                {
-                    return false;
-                }
-            }
-            return true;
         }
     }
 }

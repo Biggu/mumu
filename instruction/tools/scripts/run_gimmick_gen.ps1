@@ -2,7 +2,7 @@
 # 使い方: powershell -ExecutionPolicy Bypass -File run_gimmick_gen.ps1 [-NoInstall]
 param(
     [switch]$NoInstall,
-    [string]$Project = 'E:\testbranch\testdev\mumu'
+    [string]$Project = 'D:\test1\mumu'
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'SpriteMeta.ps1')

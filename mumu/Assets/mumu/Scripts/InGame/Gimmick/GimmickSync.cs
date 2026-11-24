@@ -25,6 +25,32 @@ namespace mumu
                 _block.SetGateOpen(_path.HasKey(GimmickUtility.GetColorIndex(exclusive)));
             }
             _block.SetCrumbled(exclusive == eBlockSubType.Crumble && _step >= 0 && _step <= _lockedIndex);
+
+            // 霧は、経路がそのマスか隣に来るまで隠れる（巻き戻すとまた隠れる）
+            bool hasFog = GimmickUtility.GetFog(_mapData.GetBlockSubTypes(_cell.x, _cell.y)) != eBlockSubType.None;
+            _block.SetFogged(hasFog && !isRevealed(_cell, _step, _path));
+        }
+
+        /// <summary>
+        /// 経路がそのマスに乗っているか、隣に乗っているか（霧を晴らす条件）
+        /// </summary>
+        /// <param name="_cell"></param>
+        /// <param name="_step"></param>
+        /// <param name="_path"></param>
+        private bool isRevealed(Vector2Int _cell, int _step, PuzzlePath _path)
+        {
+            if (_step >= 0)
+            {
+                return true;
+            }
+            foreach (Vector2Int direction in GridUtility.Directions4)
+            {
+                if (_path.IndexOf(_cell + direction) >= 0)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

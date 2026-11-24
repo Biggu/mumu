@@ -4,7 +4,7 @@
 #
 # 前提: .NET SDK（dotnet）、Unity 6000.0.58f2 が既定の場所にインストール済み、一度 Unity でプロジェクトを開いて Library がある
 # 使い方: powershell -ExecutionPolicy Bypass -File verify_build.ps1
-param([string]$Project = 'E:\testmodel\dev\mumu')
+param([string]$Project = 'D:\test1\mumu')
 $ErrorActionPreference = 'Stop'
 
 $verify = Join-Path $PSScriptRoot '..\verify'

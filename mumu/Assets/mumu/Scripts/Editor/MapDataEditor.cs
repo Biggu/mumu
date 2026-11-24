@@ -117,7 +117,7 @@ namespace mumu
         /// <summary>ギミックの塗り方</summary>
         private eGimmickBrush gimmickBrush = eGimmickBrush.ArrowAuto;
         /// <summary>Auto Place で置く数</summary>
-        private GimmickCounts placeCounts = new GimmickCounts { Arrows = 2, Turns = 2, Straights = 1, Treasures = 1, Keys = 1, Warps = 1, Crumbles = 1 };
+        private GimmickCounts placeCounts = new GimmickCounts { Arrows = 2, Turns = 2, Straights = 1, Treasures = 1, Keys = 1, Warps = 1, Crumbles = 1, OneWays = 1, Fogs = 1 };
         private int placeSeed = 1;
         /// <summary>ギミックの画像（見た目表示用）</summary>
         private readonly Dictionary<string, Sprite> gimmickSprites = new Dictionary<string, Sprite>();
@@ -268,12 +268,7 @@ namespace mumu
                     drawSprite(blockRect, getVisualSprite(type, waypoint));
                     GUI.color = baseColor;
 
-                    int decoIndex = BlockTypeUtility.GetObstructIndex(type);
-                    if (decoIndex >= 0 && !mapData.IsNearStartOrGoal(x, y))
-                    {
-                        float decoHeight = tile * DecoAspect;
-                        drawSprite(new Rect(blockRect.x, blockRect.yMax - decoHeight, tile, decoHeight), getThemeSprite((ThemeSprites.DecoStartIndex + decoIndex).ToString()));
-                    }
+                    // 通れないブロックは平らな土台だけ（デコはマップの外の枠に出す）
 
                     // 上面の中心（ブロックの上から 1/4）
                     float faceY = top + tile * 0.25f;
@@ -314,7 +309,7 @@ namespace mumu
             {
                 float size = _tile * 0.5f;
                 var rect = new Rect(_centerX - size * 0.5f, _faceY - size * 0.25f, size, size * 0.5f);
-                if (GimmickUtility.IsArrow(route))
+                if (GimmickUtility.IsArrowLike(route))
                 {
                     // 上面のひし形に沿った角度（右 = 右上 26.6 度）
                     Vector2Int d = GimmickUtility.GetArrowDirection(route);
@@ -322,7 +317,8 @@ namespace mumu
                     float angle = Mathf.Atan2(-screen.y, screen.x) * Mathf.Rad2Deg;
                     Matrix4x4 matrix = GUI.matrix;
                     GUIUtility.RotateAroundPivot(angle, rect.center);
-                    drawSprite(new Rect(_centerX - size * 0.5f, _faceY - size * 0.2f, size, size * 0.4f), getGimmickSprite("gimmick_arrow"));
+                    string arrowSprite = GimmickUtility.IsOneWay(route) ? "gimmick_oneway" : "gimmick_arrow";
+                    drawSprite(new Rect(_centerX - size * 0.5f, _faceY - size * 0.2f, size, size * 0.4f), getGimmickSprite(arrowSprite));
                     GUI.matrix = matrix;
                 }
                 else
@@ -353,6 +349,13 @@ namespace mumu
                 GUI.color = GimmickUtility.Colors[GimmickUtility.GetColorIndex(key)];
                 drawSprite(new Rect(_centerX + _tile * 0.05f, _faceY - _tile * 0.6f, size, size * 0.5f), getGimmickSprite("gimmick_key"));
             }
+            eBlockSubType sw = GimmickUtility.GetSwitch(subTypes);
+            if (sw != eBlockSubType.None)
+            {
+                float size = _tile * 0.45f;
+                GUI.color = GimmickUtility.Colors[GimmickUtility.GetColorIndex(sw)];
+                drawSprite(new Rect(_centerX - _tile * 0.4f, _faceY - _tile * 0.6f, size, size * 0.5f), getGimmickSprite("gimmick_switch"));
+            }
             GUI.color = oldColor;
 
             eBlockSubType treasure = GimmickUtility.GetTreasure(subTypes);
@@ -360,6 +363,14 @@ namespace mumu
             {
                 float size = _tile * 0.45f;
                 drawSprite(new Rect(_centerX - size * 0.5f, _faceY - _tile * 0.55f, size, size * 0.55f), getGimmickSprite("gimmick_treasure" + (treasure - eBlockSubType.Treasure1 + 1)));
+            }
+
+            // 霧は上面を覆う（エディタでは1コマ目のまま）
+            if (GimmickUtility.GetFog(subTypes) != eBlockSubType.None)
+            {
+                GUI.color = Color.white;
+                drawSprite(new Rect(_centerX - _tile * 0.5f, _faceY - _tile * 0.25f, _tile, _tile * 0.5f), getGimmickSprite("gimmick_fog"));
+                GUI.color = oldColor;
             }
         }
 
@@ -371,7 +382,20 @@ namespace mumu
         {
             if (!gimmickSprites.TryGetValue(_name, out Sprite sprite))
             {
-                sprite = AssetDatabase.LoadAssetAtPath<Sprite>(GimmickSpriteFolder + _name + ".png");
+                string path = GimmickSpriteFolder + _name + ".png";
+                sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                // シート（複数コマ）は 1コマ目（name_0）を使う
+                if (sprite == null)
+                {
+                    foreach (Object asset in AssetDatabase.LoadAllAssetRepresentationsAtPath(path))
+                    {
+                        if (asset is Sprite frame && frame.name == _name + "_0")
+                        {
+                            sprite = frame;
+                            break;
+                        }
+                    }
+                }
                 gimmickSprites[_name] = sprite;
             }
             return sprite;
@@ -416,7 +440,7 @@ namespace mumu
             themeSprites.Clear();
             if (pugSprite == null)
             {
-                foreach (Sprite sprite in Resources.LoadAll<Sprite>(PugSprites.SheetPath))
+                foreach (Sprite sprite in ResourceManager.LoadResourceAll<Sprite>(PugSprites.SheetPath))
                 {
                     if (sprite.name == PugPreviewSpriteName)
                     {
@@ -434,7 +458,7 @@ namespace mumu
         {
             if (!themeSprites.TryGetValue(_suffix, out Sprite sprite))
             {
-                sprite = Resources.Load<Sprite>(ResourceManager.GetThemeSpritePath(mapData.themeId, _suffix));
+                sprite = ResourceManager.LoadResource<Sprite>(ResourceManager.GetThemeSpritePath(mapData.themeId, _suffix));
                 themeSprites[_suffix] = sprite;
             }
             return sprite;
@@ -557,7 +581,7 @@ namespace mumu
                 {
                     recordChange("Difficulty", () => mapData.difficulty = difficulty);
                 }
-                EditorGUILayout.LabelField(" ", $"Goal unlock: {MapGenerator.GetGoalUnlockRate(mapData.difficulty):P0} of waypoints");
+                EditorGUILayout.LabelField(" ", $"Goal unlock: {MapGenerator.GetGoalUnlockRate(mapData.goalStep):P0} of waypoints");
             }
             EditorGUILayout.EndVertical();
         }
@@ -836,7 +860,7 @@ namespace mumu
         private void drawSpritePreview(string _label, string _suffix)
         {
             string path = ResourceManager.GetThemeSpritePath(mapData.themeId, _suffix);
-            Sprite[] frames = Resources.LoadAll<Sprite>(path);
+            Sprite[] frames = ResourceManager.LoadResourceAll<Sprite>(path);
             Sprite sprite = frames.Length > 0 ? frames[0] : null;
 
             EditorGUILayout.BeginVertical(GUILayout.Width(PreviewWidth));
@@ -1220,6 +1244,11 @@ namespace mumu
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.BeginHorizontal();
             placeCounts.Crumbles = EditorGUILayout.IntField("Crumble", Mathf.Max(0, placeCounts.Crumbles));
+            placeCounts.OneWays = EditorGUILayout.IntField("OneWay", Mathf.Max(0, placeCounts.OneWays));
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();
+            placeCounts.Switches = EditorGUILayout.IntField("Switch (in Key pairs)", Mathf.Clamp(placeCounts.Switches, 0, placeCounts.Keys));
+            placeCounts.Fogs = EditorGUILayout.IntField("Fog", Mathf.Max(0, placeCounts.Fogs));
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();

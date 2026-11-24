@@ -3,7 +3,7 @@
 別のセッションで作業を再開する時に最初に読む資料。ゲームの仕様・作り・決めたこと・ツール・次にやることをまとめている。
 ツールの使い方は [tools/README.md](tools/README.md)。
 
-- プロジェクト: `E:\testmodel\dev\mumu`（Unity 6000.0.58f2、UGUI、UniTask、Unity Localization、TextMeshPro）
+- プロジェクト: `D:\test1\mumu`（Unity 6000.0.58f2、UGUI、UniTask、Unity Localization、TextMeshPro）
 - 最初のシーン: `Assets/mumu/Scenes/system.unity`（`SystemManager` → タイトル画面）
 - タイトル: **つなパグ** / Pug Path（キャッチコピー「パグまで道をつないで、たすけだそう！」）
 - 方向性: **シンプル・中毒性・ピクセルアートでかわいい**。タイマー・ライフ・スタミナ・失敗させる手数制限は入れない（いつでも戻せる、のんびりした遊び心地を大事にする）
@@ -27,6 +27,8 @@
 - 画像は Unity の外でジェネレーター（tools/art）を使って作り、プレビュー画像を見て確認してから入れる
 - 変更したら `tools/scripts/verify_build.ps1` でコンパイルを確認する（Unity を開かなくても確認できる）
 - プレハブは手で YAML を書かず、エディタのビルダー（`Scripts/Editor/*Builder.cs`）で組み立てる
+- **UI のルール**: 既にある UI を直す時は、Claude はコードを編集せず、直す箇所と内容を伝える（ユーザーが直す）。新しい UI は作ってよいが、UI パーツ（Image・Text・Layout など）を実行時に `new GameObject` / `UiFactory` で作らない。Resources のプレハブを読み込む（`PartsLoaderManager` / `PopupLoader` / `ResourceManager`）。スクロールの項目も Resources から読む（ずかんの `PugBookScrollItem` の形）
+- **プレハブは直接編集**: 作ったプレハブはユーザーが Unity で直接直す。ビルダーは未作成のものだけ作り、作成済みのプレハブは上書きしない
 
 ---
 
@@ -35,7 +37,9 @@
 - 一筆書きパズル。Start から上下左右に1マスずつ経路を伸ばし、Goal に着いたらクリア。自分の経路は横切れない
 - 指を離しても経路は残る。経路上のどこかを押すとそこまで巻き戻して、そこから続けられる。1つ前のマスに戻るとアンドゥ
 - **巻き戻しの範囲**: 指を離さずドラッグ中は、経路上なら1つ前のマスにだけ戻れる（5→4→3…と一歩ずつ。`InGameMap.DragStep`）。指を離してから押し直すと、経路上のどのマスへも戻れる（`InGameMap.GetPressTarget` → `PuzzlePath.MoveTo`）。ワープの入口・こわれる橋より前には戻れない
-- **ドラッグ（方向で進む）**: 経路上を押すと、そのマスまで巻き戻してそのままドラッグ開始。先端付近（`NoDragRange` = 2 マス以内）から押してもドラッグ開始。起点から半マス分（ローカル座標なので拡大縮小しても同じ）動くと、一番近い斜めの向き（マップの 4 方向＝画面の斜め）へ1マス進む。進んだら起点を今の位置に移す。タイルの当たり判定は押した時だけ使い、ドラッグ中は使わない（`MapInputController.dragPath` → `InGameMap.TryGetDragDirection` / `DragStep`）
+- **ドラッグ（方向で進む）**: 押した場所が経路上・次に進めるマス・先端付近（`NoDragRange` = 2 マス以内）・背景のどこでも、1本指ならドラッグを始める（経路ドラッグ）。経路上を押すと、そのマスまで巻き戻してそのままドラッグ開始（次に進めるマスなら進めてから）。起点から半マス分（`DragStepRate` = 0.5、ローカル座標なので拡大縮小しても同じ）動くと、一番近い斜めの向き（マップの 4 方向＝画面の斜め）へ1マス進む。進んだら起点を今の位置に移す。1マスごとに `DragDelayPerBlock` = 0.1 秒待つ（待っている間は起点を動かさないので、指を止めていても溜まった分が進む）。進めない向きなら何もしない（先端が揺れるのは `DragStep` の `Refused`）。タイルの当たり判定は押した時だけ使い、ドラッグ中は使わない（`MapInputController.dragPath` → `MapPathInput.TryGetDragDirection` / `DragStep`）。数値は `Resources/Settings/MapInputSettings.asset`（`MapInputSettings`）
+- **ドラッグ中の線**: 先端から指の移動量だけ黄色い線を出す（`MapInputController.showDragPreview`）。指が動いていない時は先端の上に小さな点。先端が変わったら線は点に戻る
+- **2本指に切り替え**: ドラッグ中に2本目の指を置くと経路のドラッグは一時停止し、先端は1本目の指の位置へ移る。2本指で移動・ピンチ。残った1本の指で離すと、そのまま経路のドラッグを再開する（`pauseRouteDrag` / `resumePathDrag`）
 - **Goal の解放**: 通ったマス数（Start・Goal を除く）が `ウェイポイント数 × 解放率` 以上で Goal に入れる。解放率は難易度で 60%（Lv1）→ 72%（Lv20）→ 84%（Lv40）→ 90%（Lv50）。足りない時に Goal に入ろうとすると「Need N」と揺れる
 - **チェックポイント**: 設計した経路の 25% / 50% / 75% の位置。★が浮いていて、通ると回りながら跳ねる
 - **★**: クリア時に通ったチェックポイント数で ★3（全部）/ ★2（1つ足りない）/ ★1
@@ -45,7 +49,9 @@
 - クリア演出: 2匹に寄る → 2匹が喜ぶ → ブロックが順に跳ねる → ★ → 紙吹雪 → 札が CLEAR!/PERFECT! にめくれる → 報酬ダイアログ → 黒フェードで次へ
 
 操作:
-- 背景・経路外のブロックのドラッグでマップ移動、ピンチ／ホイールで拡大縮小
+- マップ移動は **2本指のドラッグ**（実機）。1本指のドラッグは経路を進める。ピンチ／ホイールで拡大縮小
+- エディタでは **Space を押しながらドラッグ** でマップ移動（Space を押すと経路のドラッグは一時停止する。離すと再開）
+- 先端の周りを自動で寄せる: ドラッグ中、先端が画面の端から 10%（`AutoFocusEdgeMarginRate`）以内に入り、さらに端の方向へ動いている時、今の倍率で先端を中央へ寄せる。連続しないよう 0.75 秒の待ち時間（`AutoFocusCooldown`）
 - 進めない時（ギミックの決まり違い・扉・Goal 未解放）は先端のブロックが横に揺れて Refused 音。揺れは `Block.PlayShake` で、重なっても元の位置からずれない（`UiTween.ShakeX` は元の X を引数で受け取る）
 - ダブルタップで先端に寄る（全体が入る倍率）。ドラッグで先端が変わったら今の倍率のまま先端に寄る
 - マップを開いた時は Start を中心に表示
@@ -81,7 +87,15 @@ Title ─ 冒険   → (全クリア済みならお知らせ) → StageMap ─ �
 Game の ☰ → 設定ポップアップ（SE / BGM / やりなおす / タイトルへ）→ はい／いいえ の確認
 ```
 
-- **冒険**: map_list.csv の順。**今はテスト用の 21 ステージ**（リリース時は 500 ステージ程度にして、以降はアップデートで追加。ステージ数の上限はない）。テーマ 1〜7 を 3 ステージずつ「チュートリアル（一本道、新しいギミックを何回か使う）→ ふつう → むずかしい」。新しいギミックの順: 1 なし / 2 やじるし / 3 まがる / 4 まっすぐ / 5 カギと扉 / 6 ワープ / 7 こわれる橋。ふつう・むずかしいはそれまでに覚えたギミック全部（新しいものは必ず入る）。宝箱はステージ1以外に1つずつ。作り直しは `tools/scripts/run_mapgen.ps1`（`tools/mapgen/Program.cs` の `Plans`）。以下は以前の説明:ステージ 1 は手で作った分かれ道のない一本道（チュートリアル代わり、5x5、13 マス）。50 をクリアした後は 50 を繰り返す（タイトルに戻らない）。全クリア後に冒険を押すと毎回お知らせダイアログ。アップデートでステージが増えたら未クリアの先頭から再開
+- **冒険**: map_list.csv の順。**今は 500 ステージ**（`tools/mapgen` で作ったテスト用。リリース用の本番ステージはまだ。ステージ数の上限はない）。10 ステージごとにテーマ 1〜14 を繰り返し（1〜10 そうげん、11〜20 なつ、…）、10 ステージごとに難易度 +1（1〜10 = 1、491〜500 = 50）。ステージ 1 は手で作った分かれ道のない一本道（ギミックなし）。
+
+**ギミックのルール（ユーザー指定・確定）**
+- ステージ 1、11、21、31… は手で作った**まっすぐな一本道**で、ギミックはなし。
+- 新しいギミックは **10 レベルごと**（= 10 ステージごと）に 1 つ増える。新しいギミックが出るステージは、必ずまっすぐな一本道。
+- それ以外のステージは、それまでに覚えたギミックからランダムに使う（ひとつも使わない時もある）。
+- ⚠ 現在のコード（`tools/mapgen/Program.cs` の `buildTutorial`）はまっすぐではなく「くねくねの一本道」で作っている。上のルールに合わせるなら直す（要確認）。
+
+新しいギミックの順（11, 21, 31… に 1 つずつ。順に やじるし上 → あかい カギ → あかい ワープ → やじるし下 → あおい カギ → あおい ワープ → まがる → やじるし左 → きいろい カギ → きいろい ワープ → まっすぐ → やじるし右 → こわれる橋。131 まで）。それ以外は、それまでに覚えたギミックからランダムに使う（ひとつも使わない時もある）。宝箱はステージ 1 以外に 1 つずつ。作り直しは `tools/scripts/run_mapgen.ps1`（`tools/mapgen/Program.cs` の `Schedule`。実行すると MapData を上書きする）。**500 をクリアした後の扱いは未確認**。全クリア後に冒険を押すと毎回お知らせダイアログ。アップデートでステージが増えたら未クリアの先頭から再開
 - **ステージマップ**: 10 ステージで 1 ページ。次のページへ進んだ時はページが下から上がってきて、男の子が下から走ってくる。くねくねの道（肉球）とノード（クリア=緑、今=黄色で脈打つ、まだ=グレー）、クリア済みは★と王冠。背景・BGM は今のステージのテーマ。クリア後は男の子が次のノードまで走る（ページをまたぐ時は走らない）
 - **おさんぽ**: 1日 5 回は日替わりシード（日付と回数から決まる、同じ日の同じ回は誰でも同じ）で、クリア時 20% でノーマルパグがもらえる（抽選はマップを決めた時、当たりなら Goal でその子が待つ、やりなおしても同じ）。回数はクリアで数える。6 回目からは完全ランダムで報酬なし。5 回目のクリア後と、その後にタイトルで押した時にお知らせ。難易度は冒険の今の難易度 ±10。札は「おさんぽ 2/5」→ 以降「ステージ ???」
 - **ずかん**: おにわの下のボタンで大きなポップアップ。全キャラのグリッド（tier の色の台・★・持っている数・まだの子は NEW・交換ボタン）。押すと はい／いいえ で確認してほねと交換（`PugBookPopup`、Prefabs/Popup/pug_book）。交換したらおにわを開き直して新しい子を出す
@@ -89,6 +103,10 @@ Game の ☰ → 設定ポップアップ（SE / BGM / やりなおす / タイ�
 - ゲーム画面のヘッダー: Goal 解放までの残りゲージ（数が減るとハートが上がる、左端に Goal の子）・王冠・★3・メニューボタン・下にステージ札
 - **横切る生き物**: ゲーム・タイトル・おにわで 6〜14 秒ごとにテーマの生き物が横切る（`AmbientCritters`、テーマとの対応は `ThemeDefine.GetCritter`）
 - 画面切り替えは `ViewManager`（`Resources/Prefabs/View/{eViewType}`）。フェード付きは `ToNextStage` / `RetryStage` / `ToTitleWithFade` / `ToStageMapWithFade` / `ToGameWithFade`
+- **雰囲気の粒**（`AmbientParticles`）: テーマごとのプレハブ `Prefabs/Ambient/ambient_{id:000}`（ParticleSystem、レイヤー `UI`、Sorting Layer `Effect`）を `EffectManager` の `effectRoot` の下に出す。同時に1つだけ（新しく出す時に前のものを消す）。粒の動き・色・大きさはプレハブで直す（コードは出す範囲だけ決める）。夜のテーマは別プレハブ（20〜32）。office（14）は粒なし。`AmbientParticlesBuilder` は未作成のプレハブだけ作る
+- **描画順（目標）**: Game < Effect < UI。Game = views（マップ・ガーデン・ステージマップ）、Effect = 雰囲気の粒（ワールド空間の ParticleSystem）、UI = ヘッダー・ポップアップ・お知らせ。粒はマップのブロックより上に出る（以前はブロックの下だった）
+  - Unity での作業（まだ）: system シーンの Canvas を **Screen Space - Camera**（Render Camera = Main Camera）にする。viewRoot に Canvas（Override Sorting、Sorting Layer `Game`）、uiRoot と notificationRoot に Canvas（Override Sorting、Sorting Layer `UI`）、ゲーム画面のヘッダーも入れ子の Canvas（`UI`）にする。粒は `Effect` のまま
+  - Overlay のままだとワールド空間の粒は UI の下に出るので、この作業が必要
 
 ---
 
@@ -101,29 +119,34 @@ Assets/mumu/
   Localization/         Locales, Tables（UI テーブル）, TextSetting.asset
   Scenes/system.unity
   Scripts/
-    Data/      CsvUtility, MapCsv, MapData, ThemeDefine, CharacterMaster
-               MapGenerator（partial。本体・公開 API と生成の流れ）, MapGenerator.Shape（形）, MapGenerator.Bridge（島をつなぐ橋）, MapGenerator.Path（経路・書き込み）, MapGenerator.Obstruct（通れないブロック）, MapGenerator.Gimmick（ギミック配置）, GimmickCounts（GimmickSettings / GimmickCounts）
-    Define/    MumuEnum（eBlockType, eBlockSubType, BlockTypeUtility）
-    Editor/    ビルダー・MapDataEditor・LocalizationSetup・FontSetup・SaveDataMenu など
+    Data/      CsvUtility, MapCsv（Resources の CSV を読む）, MapData, ThemeDefine（19 テーマ）, CharacterMaster（Unity 専用。マップ生成のテストには入れない）
+               MapGenerator（partial。本体・公開 API と生成の流れ）, MapShape（形）, MapBridge（島をつなぐ橋）, MapPath（経路）, MapObstruct（通れないブロック）, MapGrid, MapCell
+    Define/    MumuEnum（eBlockType, eBlockSubType, eSe, BlockTypeUtility など）
+    DebugTools/  DebugMenu, DebugTools（デバッグ用のキー・メニュー）
+    Editor/    ビルダー（TitleScreenBuilder, GameScreenBuilder, PopupPrefabBuilder, StageMapScreenBuilder, GardenScreenBuilder, PartsPrefabBuilder, BlockAnimatorBuilder, MapInputSettingsBuilder, RainbowStarBuilder, AmbientParticlesBuilder）, MapDataEditor, DebugMapFile, LocalizationSetup, FontSetup, SaveDataMenu, ThemeDecoSheetImporter, SystemSceneStartup, EditorUiBuilder, EditorAssetUtility, EditorBuildStamp, MumuButtonEditor
     InGame/    ゲームの中身（フォルダごとに役割を分けてある）
       InGameMap/  InGameMap（統括・公開 API）, MapBlockView（ブロックの生成と表示）, MapPathInput（押す・ドラッグ・1マス進める）, MapMarkers（走るパグと矢印）, MoveSound（移動の効果音）, MapDebugTools, MapLayout（マスの位置・上面・範囲・RaiseHeight）, TilePicker（画面→マス）, RefusalFeedback（進めなかった演出）, MapClearSequence（クリア演出）, PuzzlePath（経路の並び）, IsoDepth（描画順）, PointArrow, ePressTarget
+      Hint/       HintPlan（ヒント。設計した経路の一部を出す）
       Gimmick/    ギミックの決まりと見た目。新しいギミックはここに足す: GimmickUtility（種類と判定）, GimmickMaster・GimmickCounts（CSV と数）, GimmickPlacer（マップに置く）, PathRules（扉・やじるし・まがる・まっすぐの通り方）, GimmickSync（経路に合わせて扉・橋の見た目）, GimmickSprites, BlockGimmickView（上面の矢印・扉・こわれる橋）, BlockFloatingItems（浮かぶほね・カギ）
       Block/      Block（prefab の部品と公開 API、ラベル・デコ・吹き出し）, BlockPathView（線・足あと・光る枠）, BlockPugView（Goal のパグ）, BlockCheckpointStar（★）, BlockShake（横揺れ）
-      Input/      MapInputController（指の振り分け）, MapViewController（移動・拡大縮小。IMapCameraTarget の地図なら何でも動かせる）, IMapCameraTarget, TapDetector（ダブルタップ）
+      Input/      MapInputController（指の振り分け・経路ドラッグ・線のプレビュー・自動フォーカス）, MapInputSettings（操作の数値。Resources/Settings）, MapViewController（移動・拡大縮小。IMapCameraTarget の地図なら何でも動かせる）, IMapCameraTarget, TapDetector（タップ・ダブルタップ）
       Pug/        PlayerPug, PugSprites, CharacterSprites, PugIcons
       Garden/     GardenMap（25×25、日付で決まる配置）, GardenLayout（MapGenerator.GenerateTerrain で作る）, GardenPug（状態・歩き・タップで跳ねる）, GardenPugRoute（行き先）, GardenPugZzz（お昼寝の z）, GardenInputController（箱庭のカメラ操作）
-      Theme/      ThemeSprites
+      Theme/      ThemeSprites（テーマの画像）, ThemeBackground（背景）
       Title/      TitleStage
-    System/    CommonUtility（Punch・PlaySe・GetOrAddComponent）, TokenUtility（Cancel / Restart / Ensure）, SpriteUtility（LoadCached・FilterByPrefix）, UiFactory（CreateImage・CreateText・SetFootRect・SetPugImage）, GridUtility（NoCell・Directions4・IsoPosition・GetPlaneAngle・ExpandBounds）, ViewManager, ResourceManager, SoundManager, SaveDataManager, UserSaveData, GameSession, StageProgress, StageRecord, PugCollection, GameSettings, TextLocalizer, MonoSingleton, PopupManager（ポップアップの開閉と通知・トースト・おはなし。uiRoot / notificationRoot の下に出す）, PartsLoaderManager（Prefabs/Common の部品を作る）…
-    UI/Common/ Notification（真ん中のお知らせ）, Toast（画面下のお知らせ）, ThemeStory（テーマのおはなし）, BoneBonusOverlay（ボーナス）, MumuButton（使えない時はグレーでお知らせ）, UiTween, FadeScreen, HeartEffect, ConfettiEffect, AmbientParticles, SpriteFrameAnimation, UiImageUtility
-    UI/Popup/  PopupBase, BaseParam / AlertParam / SettingsParam / PugBookParam / ConfirmParam, SettingsPopup, MessageDialog, ConfirmDialog（2つのボタンの確認。おにわ・ずかんで共通）, PugBookPopup, PopupLoader    UI/View/   ViewBase, TitleView, GameView, GoalGauge, StageMapView, GardenView
+    System/    CommonUtility（Punch・PlaySe・GetOrAddComponent）, TokenUtility（Cancel / Restart / Ensure）, SpriteUtility（LoadCached・FilterByPrefix）, UiFactory（CreateImage・CreateText・SetFootRect・SetPugImage）, GridUtility（NoCell・Directions4・IsoPosition・GetPlaneAngle・ExpandBounds）, ViewManager, ResourceManager, SoundManager（eSe・TitleBgmId）, SaveDataManager, SaveCrypto（暗号化）, UserSaveData, GameSession, StageProgress, StageRecord, PugCollection, GameSettings, TextLocalizer, MonoSingleton, Singleton, SystemManager, SafeAreaManager, PopupManager（ポップアップの開閉と通知・トースト・おはなし。uiRoot / notificationRoot の下に出す）, PartsLoaderManager（Prefabs/Common の部品を作る）…
+    UI/Common/ Notification（真ん中のお知らせ）, Toast（画面下のお知らせ）, ThemeStory（テーマのおはなし）, BoneBonusOverlay（ボーナス）, MumuButton（使えない時はグレーでお知らせ）, UiTween, FadeScreen, HeartEffect, ConfettiEffect, AmbientParticles, AmbientCritters（横切る生き物）, PugAura（tier5・6 のキラキラ）, RainbowStar, SpriteFrameAnimation, UiImageUtility
+    UI/Parts/  PugBookScrollItem
+    UI/Popup/  PopupBase, BaseParam / AlertParam / SettingsParam / PugBookParam / ConfirmParam, SettingsPopup, MessageDialog, ConfirmDialog（2つのボタンの確認。おにわ・ずかんで共通）, PugBookPopup, PopupLoader
+    UI/View/   ViewBase, TitleView, GameView, GoalGauge, StageMapView, GardenView
   Resources/
-    MapData/      map_list.csv, maps/map_000001〜050.csv
-    MasterData/   character.csv, gimmick.csv
-    Prefabs/      Common/fade, InGame/block, Popup/settings_popup・message_dialog, View/Title・Game・Garden・StageMap
-    Sound/SE/     se_000001〜000005, se_900001
-    Sound/BGM/    bgm_000〜003, bgm_999
-    Sprites/      Common（pug, point_arrow, block_highlight, paw）, UI（ui_*）, Pugs（pug_001〜050）, Themes/theme_000001〜000014
+    MapData/      map_list.csv, maps/map_000001〜000500.csv
+    MasterData/   character.csv（501 匹）, gimmick.csv
+    Prefabs/      Ambient/（雰囲気の粒、テーマごと 31 個（昼 18・夜 13）。ParticleSystem）, Common/（big_star, fade, player_pug, pug_book_scroll_item, stage_pug）, InGame/block, Popup/（bone_bonus, confirm_dialog, message_dialog, notification, pug_book, settings_popup, theme_story, toast）, View/（Title, Game, Garden, StageMap）
+    Settings/     MapInputSettings.asset（操作の数値）
+    Sound/SE/     se_000001〜000028（wav。番号の意味は `eSe`）
+    Sound/BGM/    bgm_000〜014（mp3。000 タイトル、001〜014 はテーマ 1〜14）, bgm_999（使っていない）
+    Sprites/      Common（pug, point_arrow, block_highlight, paw, critters, gimmick_*, rainbow_star, ambient_square, ambient_round）, UI（ui_*, Kit/）, PugIcons, Pugs（フォルダ 000〜500）, Themes/theme_000001〜000033（テーマ 1〜19 と、その後の 20〜33）
 ```
 
 ---
@@ -168,12 +191,14 @@ eBlockType: `Empty=0, Walkable=1, Obstruct1=2, Start=3, Goal=4, Water=5, Obstruc
 
 ## 6. 画像・音の決まり
 
-- テーマ（`ThemeDefine`、14 個）: 1 meadow, 2 summer, 3 winter, 4 autumn, 5 spring, 6 sakura, 7 desert, 8 cake, 9 pudding, 10 city, 11 village, 12 sea, 13 ice, 14 office（それぞれ雰囲気のパーティクル設定あり）
-- テーマ画像 `Sprites/Themes/theme_XXXXXX/XXXXXX_N`: 0 未通過 / 1 通過済み / 2〜5 デコ（透明背景 169x281、下揃えで奥のブロックに重なる）/ 6 水 / 7 通れないブロックの土台（ゲームとマップエディタで `Block.ObstructTint` を掛けて暗く表示。デコは元の色）/ 8 橋 / bg 背景タイル
+- テーマ（`ThemeDefine`、19 個）: 1 meadow, 2 summer, 3 winter, 4 autumn, 5 spring, 6 sakura, 7 desert, 8 cake, 9 pudding, 10 city, 11 village, 12 sea, 13 ice, 14 office, 15 space, 16 underwater, 17 moon_forest, 18 castle, 19 mountain（それぞれ雰囲気のパーティクル設定あり）。マップ生成（mapgen）は今 1〜14 だけを使う
+- テーマ画像 `Sprites/Themes/theme_XXXXXX/XXXXXX_N`: 0 未通過 / 1 通過済み / 2〜5 高いデコ（4コマのシート、169x281 1コマ）/ 6〜7 普通のデコ（静止画）/ 8〜9 小さいデコ（静止画）/ 10 水 / 11 通れないブロックの土台（`Block.ObstructTint` で暗く表示）/ 12 橋 / bg 背景タイル
+- デコの出し方: マップの外の後ろ2マス（左上・右上の辺）に枠。外側は高いデコ、内側は 60% 小さい・普通、20% なし、20% 高い（`MapBlockView.buildRing`、位置とテーマのハッシュで毎回同じ）。マップの中の通れないブロックは平らな土台だけ（デコなし）
+- 夜のテーマ（20〜33）は昼のテーマ（1〜14）のデコをコピーして使う（色は夜用の土台だけ）
 - ブロックはアイソメ。`posX = (x - flippedY) * 30`, `posY = (x + flippedY) * 15`（`flippedY = h-1-y`）、ブロック 60px、上面判定はひし形、持ち上げ 12px、描画順 `SortIndex`
 - パグのシート: tools/README.md 参照。表示サイズ 44px、pivot (0.5, 0.08) で足元を上面の中心に
-- SE（`eSe`、`Sound/SE/se_{6桁}`）: 1 Step / 2 Undo / 3 Checkpoint / 4 Refused / 5 Clear / 900001 ButtonClick（900001 以降はシステム音）。`MumuButton` はクリックで ButtonClick を鳴らす（インスペクターで音の変更・無効化、暗幕は無音）
-- BGM（`Sound/BGM/bgm_{3桁}`）: 999 タイトル、それ以外はテーマ ID（ない時は 000）。おにわはテーマ 1。同じ曲なら流し直さない
+- SE（`eSe`、`Sound/SE/se_{6桁}`）: 1 Click（ボタン）/ 3 Bark2（進めない）/ 4 BlockGain（1マス進む）/ 5 BlockGain2（チェックポイント・Goal 解放）/ 6 BlockMinus（巻き戻す）/ 7 WinJingle（クリア）/ 28 AlertChime（今日のおさんぽが終わった）など、全部は `eSe`（`Scripts/System/SoundManager.cs`）。`MumuButton` はクリックで Click 音を鳴らす（インスペクターで音の変更・無効化、暗幕は無音）
+- BGM（`Sound/BGM/bgm_{3桁}`）: タイトルは 000（`SoundManager.TitleBgmId`）、テーマ ID 1〜14 は bgm_001〜014、曲のないテーマは 000。おにわはテーマ 1。同じ曲なら流し直さない。bgm_999 は使っていない
 
 ---
 
@@ -198,6 +223,7 @@ eBlockType: `Empty=0, Walkable=1, Obstruct1=2, Start=3, Goal=4, Water=5, Obstruc
 | mumu > Build Garden Screen | View/Garden | ない時 |
 | mumu > Build Stage Map Screen | View/StageMap | ない時 |
 | mumu > Build Block Animator | ブロックの Animator | — |
+| mumu > Build Ambient Effects | Prefabs/Ambient/ambient_{id:000}（テーマごとの雰囲気の粒）。Sorting Layer `Game` / `Effect` / `UI` も足す | 未作成のプレハブがある時だけ作る（作成済みは上書きしない） |
 | mumu > Setup Font | DotGothic16 の TMP フォント | — |
 | mumu > Setup Localization | UI テーブル | キーが足りない時 |
 | mumu > Save Data > Reset / Export JSON / Import JSON / Open Folder | 保存データを新規状態に／読める JSON に書き出す／書き換えた JSON を暗号化して保存／フォルダを開く | — |
@@ -228,7 +254,7 @@ eBlockType: `Empty=0, Walkable=1, Obstruct1=2, Start=3, Goal=4, Water=5, Obstruc
 - **X キー長押し**: 各マスに経路の番号を表示
 - **タイトルで V キー**: パグを全部（501 匹）仲間にする（`TitleView.Update`）
 - **タイトルで B キー**: ほねを 999999 増やす（int の上限で止まる）
-- 保存データは Export JSON → 書き換え → Import JSON で状態を作れる（例 `"clearedCount": 21` で全クリア、`"dailyStrollCount": 0` で今日のおさんぽを戻す）
+- 保存データは Export JSON → 書き換え → Import JSON で状態を作れる（例 `"clearedCount": 500` で全クリア、`"dailyStrollCount": 0` で今日のおさんぽを戻す）
 - Unity のログ: `%LOCALAPPDATA%\Unity\Editor\Editor.log`
 
 ---
@@ -240,7 +266,7 @@ eBlockType: `Empty=0, Walkable=1, Obstruct1=2, Start=3, Goal=4, Water=5, Obstruc
 - おさんぽの日替わりは端末の日付で判定（ずらせば回数が戻る。サーバーなし）
 - 冒険のマップ名は「meadow 1」などの仮
 - verify の csproj は `verify_build.ps1` が毎回プロジェクト直下の `Assembly-CSharp*.csproj`（Unity が作る）から作り直す（相対パスを絶対パスにする）。Unity のバージョンやパッケージを変えたら、プロジェクト直下の csproj を Unity に作り直させる
-- ユーザーが手で入れた素材: BGM（bgm_000〜003, 999）、SE（se_000001〜5, 900001）。画像はほぼジェネレーター製
+- 音は今は仮の音（コピー）。名前と内容の決まりは `createsound.txt`（SE 28 個、BGM は 033 まで計画・現在は 000〜014 と 999 がある）。画像はほぼジェネレーター製
 
 ---
 
@@ -248,7 +274,7 @@ eBlockType: `Empty=0, Walkable=1, Obstruct1=2, Start=3, Goal=4, Water=5, Obstruc
 
 1. **Unity で全部の動作確認**（オフラインでビルド・テストは通っているが、実機・エディタ上ではまだ見ていない）
    - ギミック 7 種、宝箱、カギと扉、ワープ、こわれる橋 / 501 匹のパグ・キラキラ・おにわで連れていく / 暗号化した保存と古い保存の移行 / 通れないブロックの暗さ（`Block.ObstructTint`）
-2. **リリース用のステージ**（今はテスト用 21）: 500 ステージ程度。gimmick.csv の unlock_stage も合わせる。ステージ名を正式に
+2. **リリース用のステージ**（今は `tools/mapgen` で作った 500 ステージ）: 本番の並びと名前を決める。gimmick.csv の unlock_stage も合わせる。ステージ名を正式に
 3. **バランス**: ほね（ガチャ値段・かぶり・宝箱）、tier の確率、ギミックの出る量
 4. **パグの名前**: 今は仮（毛色_衣装_tier_id）
 5. **UI の作り直し**（UI キットを使う）、テーマ背景・デコの見直し（`ThemeGen.cs`）

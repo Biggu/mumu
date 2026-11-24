@@ -36,6 +36,9 @@ namespace mumu
         /// <summary>クリア済みか</summary>
         public bool IsCleared { get; private set; }
         /// <summary>MapData の経路数</summary>
+        /// <summary>ボーナスステージの Goal 解放の割合（経路数に対して）</summary>
+        public const float BonusGoalUnlockRate = 0.01f;
+
         public int WaypointCount { get; }
         /// <summary>Goal に入るのに必要な最低手数</summary>
         public int RequiredMoveCount { get; }
@@ -83,6 +86,28 @@ namespace mumu
         /// <summary>マップの宝箱でもらえるほねの合計</summary>
         public int BoneCount { get; }
 
+        /// <summary>
+        /// マスの宝箱のほね（通常のステージはレベルで増える。ボーナスステージはレベルの倍率）
+        /// </summary>
+        /// <param name="_subTypes"></param>
+        private int treasureBones(IReadOnlyList<eBlockSubType> _subTypes)
+        {
+            if (mapData.isBonus)
+            {
+                return GimmickUtility.GetTreasureBones(_subTypes) * GimmickUtility.GetBoneMultiplier(mapData.difficulty);
+            }
+            return GimmickUtility.GetNormalTreasureBones(_subTypes, mapData.difficulty);
+        }
+
+        /// <summary>
+        /// そのマスの宝箱のほね（表示用）
+        /// </summary>
+        /// <param name="_cell"></param>
+        public int BonesAt(Vector2Int _cell)
+        {
+            return treasureBones(mapData.GetBlockSubTypes(_cell.x, _cell.y));
+        }
+
         /// <summary>経路上で開けている宝箱のほねの合計</summary>
         public int CollectedBoneCount
         {
@@ -91,7 +116,7 @@ namespace mumu
                 int count = 0;
                 foreach (Vector2Int cell in cells)
                 {
-                    count += GimmickUtility.GetTreasureBones(mapData.GetBlockSubTypes(cell.x, cell.y));
+                    count += treasureBones(mapData.GetBlockSubTypes(cell.x, cell.y));
                 }
                 return count;
             }
@@ -129,13 +154,15 @@ namespace mumu
             rules = new PathRules(this, _mapData);
             mapData.TryFindBlock(eBlockType.Start, out start);
             WaypointCount = mapData.GetMaxWaypointIndex() + 1;
-            RequiredMoveCount = Mathf.CeilToInt(WaypointCount * MapGenerator.GetGoalUnlockRate(_mapData.difficulty));
+            // ボーナスステージは少し進めばゴールできる（宝箱は通った分だけ取れる）
+            float goalRate = _mapData.isBonus ? BonusGoalUnlockRate : MapGenerator.GetGoalUnlockRate(_mapData.goalStep);
+            RequiredMoveCount = Mathf.CeilToInt(WaypointCount * goalRate);
             checkpoints = mapData.GetCheckpoints();
             for (int y = 0; y < mapData.height; y++)
             {
                 for (int x = 0; x < mapData.width; x++)
                 {
-                    BoneCount += GimmickUtility.GetTreasureBones(mapData.GetBlockSubTypes(x, y));
+                    BoneCount += treasureBones(mapData.GetBlockSubTypes(x, y));
                 }
             }
 
@@ -171,7 +198,7 @@ namespace mumu
         {
             foreach (Vector2Int cell in cells)
             {
-                if (mapData.HasSubType(cell.x, cell.y, GimmickUtility.Keys[_color]))
+                if (mapData.HasSubType(cell.x, cell.y, GimmickUtility.Keys[_color]) || mapData.HasSubType(cell.x, cell.y, GimmickUtility.Switches[_color]))
                 {
                     return true;
                 }
@@ -187,6 +214,35 @@ namespace mumu
         {
             int index = IndexOf(_cell);
             return index >= 0 && getRewindIndex(index) <= LockedIndex;
+        }
+
+        /// <summary>
+        /// そのマスまで戻すと、先端から消える道のマス数（戻せない・戻らない時は 0）
+        /// </summary>
+        /// <param name="_cell"></param>
+        public int GetRewindCount(Vector2Int _cell)
+        {
+            int index = IndexOf(_cell);
+            if (IsCleared || index < 0)
+            {
+                return 0;
+            }
+            int target = getRewindIndex(index);
+            if (target <= LockedIndex || target == cells.Count - 1)
+            {
+                return 0;
+            }
+            return cells.Count - 1 - target;
+        }
+
+        /// <summary>
+        /// そのマスまで戻すと消える道のマス（先端から順に並ぶ。戻らない時は空）
+        /// </summary>
+        /// <param name="_cell"></param>
+        public List<Vector2Int> GetRewindCells(Vector2Int _cell)
+        {
+            int count = GetRewindCount(_cell);
+            return count > 0 ? cells.GetRange(cells.Count - count, count) : new List<Vector2Int>();
         }
 
         /// <summary>

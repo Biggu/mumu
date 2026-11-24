@@ -20,7 +20,7 @@ x,y,type,waypoint,gimmick
 8,1,Walkable,,
 9,1,Empty,,
 0,2,Empty,,
-1,2,Walkable,2,Turn
+1,2,Walkable,2,
 2,2,Walkable,1,
 3,2,Walkable,26,
 4,2,Walkable,25,
@@ -30,9 +30,9 @@ x,y,type,waypoint,gimmick
 8,2,Obstruct2,,
 9,2,Empty,,
 0,3,Empty,,
-1,3,Walkable,3,
+1,3,Walkable,3,Straight
 2,3,Walkable,28,
-3,3,Walkable,27,Turn
+3,3,Walkable,27,
 4,3,Walkable,24,
 5,3,Obstruct3,,
 6,3,Walkable,,
@@ -54,7 +54,7 @@ x,y,type,waypoint,gimmick
 2,5,Goal,,
 3,5,Walkable,31,
 4,5,Walkable,18,
-5,5,Walkable,19,
+5,5,Walkable,19,Straight
 6,5,Walkable,20,
 7,5,Obstruct2,,
 8,5,Obstruct3,,

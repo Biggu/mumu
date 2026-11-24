@@ -13,8 +13,8 @@ x,y,type,waypoint,gimmick
 1,1,Walkable,10,GateBlue
 2,1,Obstruct1,,
 3,1,Walkable,6,GateRed
-4,1,Walkable,3,Treasure2
-5,1,Walkable,2,KeyRed
+4,1,Walkable,3,
+5,1,Walkable,2,KeyRed;Turn
 6,1,Water,,
 7,1,Water,,
 8,1,Water,,
@@ -40,7 +40,7 @@ x,y,type,waypoint,gimmick
 8,3,Water,,
 9,3,Water,,
 0,4,Walkable,14,
-1,4,Walkable,32,
+1,4,Walkable,32,Treasure2
 2,4,Walkable,27,WarpInRed
 3,4,Walkable,26,
 4,4,Walkable,25,
@@ -70,7 +70,7 @@ x,y,type,waypoint,gimmick
 8,6,Water,,
 9,6,Water,,
 0,7,Walkable,17,WarpInBlue
-1,7,Walkable,29,
+1,7,Walkable,29,Turn
 2,7,Walkable,28,WarpOutRed
 3,7,Obstruct1,,
 4,7,Walkable,22,

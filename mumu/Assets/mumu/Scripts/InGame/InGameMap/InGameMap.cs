@@ -35,6 +35,20 @@ namespace mumu
         private HintPlan hint = null;
         /// <summary>このステージで橋が壊れたことを知らせたか</summary>
         private bool isCrumbleNotified = false;
+        /// <summary>この秒数以内に続けて宝箱を拾うと、連続音になる</summary>
+        private const float ChestComboWindow = 1.5f;
+        /// <summary>最後に宝箱を拾った時刻</summary>
+        private float lastChestTime = float.NegativeInfinity;
+        /// <summary>続けて拾った宝箱の数（1 から。2 以上で x2・x3 と出す）</summary>
+        private int chestCombo = 0;
+        /// <summary>ほねの文字の色</summary>
+        private static readonly Color BonePopColor = new Color(1f, 0.85f, 0.3f);
+        /// <summary>連続の文字の色</summary>
+        private static readonly Color ComboPopColor = new Color(1f, 0.55f, 0.2f);
+        /// <summary>連続の文字の高さ（ほねの文字より上）</summary>
+        private const float ComboOffsetY = 50f;
+        /// <summary>文字を出す止め時（画面を閉じたら止まる）</summary>
+        private CancellationToken viewToken;
 
         /// <summary>経路変更時の処理</summary>
         private Action onPathChangedAction = null;
@@ -42,6 +56,12 @@ namespace mumu
         private Action onClearedAction = null;
         /// <summary>画面下に出すお知らせの処理（ローカライズのキー）</summary>
         private Action<string> onMessageAction = null;
+        /// <summary>この数より多く戻る時は、先に確認する</summary>
+        public const int RewindConfirmCount = 10;
+        /// <summary>確認が必要な巻き戻しの処理（戻すマス）</summary>
+        private Action<Vector2Int> onRewindConfirmAction = null;
+        /// <summary>確認を済ませた巻き戻しを実行中か</summary>
+        private bool isRewindConfirmed = false;
 
         /// <summary>マップデータ</summary>
         public MapData MapData => mapData;
@@ -63,6 +83,7 @@ namespace mumu
         public async UniTask<bool> InitAsync(GameObject _mapRoot, CancellationToken _token = default, MapData _mapData = null, CharacterSprites _goalCharacter = null, CharacterSprites _playerCharacter = null)
         {
             mapRoot = _mapRoot;
+            viewToken = _token;
 
             // マップデータ未指定なら一覧の先頭のマップ（TODO: ステージ選択の追加後に差し替え）
             mapData = _mapData != null ? _mapData : MapCsv.LoadFirstMap();
@@ -114,6 +135,50 @@ namespace mumu
         public void SetOnCleared(Action _action)
         {
             onClearedAction = _action;
+        }
+
+        /// <summary>
+        /// 多く戻る時の確認の処理を設定（引数は戻すマス。確認して OK なら ConfirmRewind を呼ぶ）
+        /// </summary>
+        /// <param name="_action"></param>
+        public void SetOnRewindConfirm(Action<Vector2Int> _action)
+        {
+            onRewindConfirmAction = _action;
+        }
+
+        /// <summary>
+        /// 多く戻る時に消える道を赤く出す（_isVisible で出す・消す）
+        /// </summary>
+        /// <param name="_cell"></param>
+        /// <param name="_isVisible"></param>
+        public void SetRewindPreview(Vector2Int _cell, bool _isVisible)
+        {
+            foreach (Vector2Int cell in path.GetRewindCells(_cell))
+            {
+                getBlock(cell)?.SetRewindPreview(_isVisible);
+            }
+        }
+
+        /// <summary>
+        /// 確認を済ませた巻き戻しを行う（もどった扱いにする）
+        /// </summary>
+        /// <param name="_cell"></param>
+        public void ConfirmRewind(Vector2Int _cell)
+        {
+            int countBefore = path.Cells.Count;
+            isRewindConfirmed = true;
+            try
+            {
+                applyMove(_cell);
+            }
+            finally
+            {
+                isRewindConfirmed = false;
+            }
+            if (path.Cells.Count < countBefore)
+            {
+                hasRewound = true;
+            }
         }
 
         /// <summary>
@@ -177,11 +242,38 @@ namespace mumu
         /// <summary>
         /// ヒントを出す（設計した経路の一部。経路に乗ると普通の線になる）
         /// </summary>
-        /// <param name="_seed"></param>
-        public void ShowHint(int _seed)
+        /// <param name="_useCount">使った回数</param>
+        public void ShowHint(int _useCount)
         {
-            hint = new HintPlan(HintPlan.GetDesignedPath(mapData), _seed);
+            hint = new HintPlan(HintPlan.GetDesignedPath(mapData), _useCount);
             refreshPath();
+        }
+
+        /// <summary>
+        /// このマップで使える、ヒントの回数の上限
+        /// </summary>
+        public int HintMaxUses => HintPlan.GetMaxUses(HintPlan.GetDesignedPath(mapData).Length);
+
+        /// <summary>
+        /// 1つ前のマスへ戻せるか（クリア後・先端だけ・こわれた橋より前は戻せない）
+        /// </summary>
+        public bool CanUndo => !path.IsCleared && path.Cells.Count >= 2 && !path.IsRewindLocked(path.Cells[path.Cells.Count - 2]);
+
+        /// <summary>
+        /// 先端を1つ前のマスへ戻す（マスを直接押したのと同じ決まり・もどった扱い）
+        /// </summary>
+        public void UndoLastStep()
+        {
+            if (!CanUndo)
+            {
+                return;
+            }
+            int countBefore = path.Cells.Count;
+            applyMove(path.Cells[path.Cells.Count - 2]);
+            if (path.Cells.Count < countBefore)
+            {
+                hasRewound = true;
+            }
         }
 
         /// <summary>
@@ -203,6 +295,15 @@ namespace mumu
         public void DragStep(Vector2Int _direction)
         {
             pathInput.DragStep(_direction);
+        }
+
+        /// <summary>
+        /// 先端から向きへ進むのが、経路を戻る一歩か（経路上の一つ前のマス）
+        /// </summary>
+        /// <param name="_direction"></param>
+        public bool IsRewindDirection(Vector2Int _direction)
+        {
+            return path.IndexOf(path.Head + _direction) >= 0;
         }
 
         /// <summary>
@@ -229,6 +330,15 @@ namespace mumu
         public Vector2 GetHeadPosition()
         {
             return getTopFacePosition(path.Head) + ((RectTransform)mapRoot.transform).anchoredPosition;
+        }
+
+        /// <summary>
+        /// マスの上面の中心（mapRoot の親の座標系。文字を出す場所に使う）
+        /// </summary>
+        /// <param name="_cell"></param>
+        public Vector2 GetCellPosition(Vector2Int _cell)
+        {
+            return getTopFacePosition(_cell) + ((RectTransform)mapRoot.transform).anchoredPosition;
         }
 
         /// <summary>
@@ -397,6 +507,60 @@ namespace mumu
             {
                 CommonUtility.PlaySe(eSe.Warp);
             }
+            playChestSound(head);
+        }
+
+        /// <summary>
+        /// 宝箱を拾った時の音（種類ごと。続けて拾うと連続音）
+        /// </summary>
+        /// <param name="_head"></param>
+        private void playChestSound(Vector2Int _head)
+        {
+            eBlockSubType treasure = GimmickUtility.GetTreasure(mapData.GetBlockSubTypes(_head.x, _head.y));
+            if (treasure == eBlockSubType.None)
+            {
+                return;
+            }
+
+            bool isCombo = Time.unscaledTime - lastChestTime < ChestComboWindow;
+            lastChestTime = Time.unscaledTime;
+            chestCombo = isCombo ? chestCombo + 1 : 1;
+            spawnChestPopups(_head);
+            if (isCombo)
+            {
+                CommonUtility.PlaySe(eSe.ChestCombo);
+            }
+            else if (treasure == eBlockSubType.Treasure1)
+            {
+                CommonUtility.PlaySe(eSe.ChestWood);
+            }
+            else if (treasure == eBlockSubType.Treasure2)
+            {
+                CommonUtility.PlaySe(eSe.ChestSilver);
+            }
+            else
+            {
+                CommonUtility.PlaySe(eSe.ChestGold);
+            }
+        }
+
+        /// <summary>
+        /// 拾ったほね（+N）と、続けて拾った数（x2・x3…）を宝箱の上に出す
+        /// </summary>
+        /// <param name="_cell"></param>
+        private void spawnChestPopups(Vector2Int _cell)
+        {
+            if (mapRoot == null)
+            {
+                return;
+            }
+            Transform parent = mapRoot.transform.parent;
+            Vector2 position = GetCellPosition(_cell);
+            FloatText.Spawn(parent, position, "+" + path.BonesAt(_cell), BonePopColor, viewToken);
+            if (chestCombo >= 2)
+            {
+                FloatText.Spawn(parent, position + new Vector2(0f, ComboOffsetY), "x" + chestCombo, ComboPopColor, viewToken);
+            }
         }
 
         /// <summary>
@@ -405,6 +569,13 @@ namespace mumu
         /// <param name="_cell"></param>
         private eMoveResult applyMove(Vector2Int _cell)
         {
+            // 多く戻る時は、確認が済むまで動かさない
+            if (!isRewindConfirmed && path.GetRewindCount(_cell) > RewindConfirmCount)
+            {
+                onRewindConfirmAction?.Invoke(_cell);
+                return eMoveResult.None;
+            }
+
             bool wasGoalUnlocked = path.CanEnterGoal;
             int passedCheckpoints = path.PassedCheckpointCount;
             int keysBefore = countKeys();
