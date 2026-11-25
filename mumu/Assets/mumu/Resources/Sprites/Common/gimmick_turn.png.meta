@@ -115,8 +115,8 @@ TextureImporter:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 32
-        height: 32
+        width: 96
+        height: 96
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -125,8 +125,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6910f026a422428b9ab11e14a8bf8166
-      internalID: 1500000001
+      spriteID: 714bcc06916b4bc2a63bb56db22cef02
+      internalID: 1500000200
       vertices: []
       indices: 
       edges: []
@@ -135,10 +135,10 @@ TextureImporter:
       name: gimmick_turn_1
       rect:
         serializedVersion: 2
-        x: 32
+        x: 96
         y: 0
-        width: 32
-        height: 32
+        width: 96
+        height: 96
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -147,8 +147,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7504b1266150487da57e47935db37176
-      internalID: 1500000002
+      spriteID: bd4ea671400d42a5bd77cfd6b62ed0ae
+      internalID: 1500000201
       vertices: []
       indices: 
       edges: []
@@ -157,10 +157,10 @@ TextureImporter:
       name: gimmick_turn_2
       rect:
         serializedVersion: 2
-        x: 64
+        x: 192
         y: 0
-        width: 32
-        height: 32
+        width: 96
+        height: 96
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -169,8 +169,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f707eb64a05243cf8e71372c7a119a1e
-      internalID: 1500000003
+      spriteID: f6d087eed25640769b8ec27bb758a2bb
+      internalID: 1500000202
       vertices: []
       indices: 
       edges: []
@@ -179,10 +179,10 @@ TextureImporter:
       name: gimmick_turn_3
       rect:
         serializedVersion: 2
-        x: 96
+        x: 288
         y: 0
-        width: 32
-        height: 32
+        width: 96
+        height: 96
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -191,8 +191,96 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 3d983405b2d446dfbc2b94a8d774cce3
-      internalID: 1500000004
+      spriteID: 1ac9adcec1a64d72aed59816b8980501
+      internalID: 1500000203
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gimmick_turn_4
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ac570bfef3f14f158ec92fbe4316c1d9
+      internalID: 1500000204
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gimmick_turn_5
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0961660c1c9d430195da36e4145d3671
+      internalID: 1500000205
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gimmick_turn_6
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3487e80db6b048eaa9ee17ed363061c1
+      internalID: 1500000206
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gimmick_turn_7
+      rect:
+        serializedVersion: 2
+        x: 672
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0db9fb4bbdda45ac8c21554813e71416
+      internalID: 1500000207
       vertices: []
       indices: 
       edges: []
@@ -211,10 +299,14 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      gimmick_turn_0: 1500000001
-      gimmick_turn_1: 1500000002
-      gimmick_turn_2: 1500000003
-      gimmick_turn_3: 1500000004
+      gimmick_turn_0: 1500000200
+      gimmick_turn_1: 1500000201
+      gimmick_turn_2: 1500000202
+      gimmick_turn_3: 1500000203
+      gimmick_turn_4: 1500000204
+      gimmick_turn_5: 1500000205
+      gimmick_turn_6: 1500000206
+      gimmick_turn_7: 1500000207
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

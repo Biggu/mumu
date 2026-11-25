@@ -16,7 +16,8 @@ MonoBehaviour:
     m_Code: en
   m_SharedData: {fileID: 11400000, guid: 93f54dfa4b8742c4991c6c146f08b005, type: 2}
   m_Metadata:
-    m_Items: []
+    m_Items:
+    - rid: 4979853656306483282
   m_TableData:
   - m_Id: 952201216
     m_Localized: Pug Path
@@ -63,9 +64,10 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 54563881185281
-    m_Localized: Stage {0}
+    m_Localized: Stage {stage}
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 54563885379584
     m_Localized: OK
     m_Metadata:
@@ -110,9 +112,10 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 68878059270144
-    m_Localized: 'Friends: {0}'
+    m_Localized: 'Friends: {count}'
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 68878059270145
     m_Localized: 'No friends yet.
 
@@ -136,15 +139,17 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 68878059270150
-    m_Localized: '{0} joined you!
+    m_Localized: '{name} joined you!
 
       Say hi in the Garden.'
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 76568915439616
-    m_Localized: Stroll {0}/{1}
+    m_Localized: Stroll {num}/{total}
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 76568944799744
     m_Localized: No more pug chances today
     m_Metadata:
@@ -159,45 +164,51 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 76568944799746
-    m_Localized: Stages {0}-{1}
+    m_Localized: Stages {first}-{last}
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 76568944799747
     m_Localized: Play
     m_Metadata:
       m_Items: []
   - m_Id: 88951276793856
-    m_Localized: Friends {0}  Bones {1}
+    m_Localized: Friends {count}  Bones {bone}
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 88951314542592
-    m_Localized: 'New gimmick: {0}'
+    m_Localized: 'New gimmick: {name}'
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 94519563481088
     m_Localized: Pug Book
     m_Metadata:
       m_Items: []
   - m_Id: 94519567675392
-    m_Localized: 'Bones: {0}'
+    m_Localized: 'Bones: {bone}'
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 94519567675393
     m_Localized: Adopt?
     m_Metadata:
       m_Items: []
   - m_Id: 94519567675394
-    m_Localized: 'Trade {1} bones
+    m_Localized: 'Trade {bone} bones
 
-      to adopt {0}?'
+      to adopt {name}?'
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 94519567675395
-    m_Localized: 'You need {0} more bones.
+    m_Localized: 'You need {bone} more bones.
 
       Collect them on walks and adventures!'
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 94519567675396
     m_Localized: Meet on a stroll
     m_Metadata:
@@ -219,11 +230,12 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 111827262468096
-    m_Localized: '{0} is already your friend.
+    m_Localized: '{name} is already your friend.
 
-      You got {1} bones instead!'
+      You got {bone} bones instead!'
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 111827262468097
     m_Localized: Owned
     m_Metadata:
@@ -257,9 +269,10 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 403868060053504
-    m_Localized: Woof-derful Bonus! Bones +{0}
+    m_Localized: Woof-derful Bonus! Bones +{bone}
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 403868089413632
     m_Localized: Perfect clear without rewinding
     m_Metadata:
@@ -321,9 +334,10 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 414729541611533
-    m_Localized: Use a hint? It costs {0} bones
+    m_Localized: Use a hint? It costs {bone} bones
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 414729541611534
     m_Localized: Use
     m_Metadata:
@@ -333,11 +347,13 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 1893249019113472
-    m_Localized: 'Go back {0} tiles?
+    m_Localized: 'Go back {count} tiles?
 
-      You won''t get the no-rewind clear bonus.'
+      You won''t get the no-rewind clear
+      bonus.'
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 1919011159896064
     m_Localized: '[TODO] Theme 15 story'
     m_Metadata:
@@ -551,25 +567,29 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 1924591085776915
-    m_Localized: Stage {0}  {1}
+    m_Localized: Stage {stage}  {theme}
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 1924591085776916
-    m_Localized: '{0}/{1} left today'
+    m_Localized: '{num}/{total} left today'
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 1924591085776917
     m_Localized: Not owned only
     m_Metadata:
       m_Items: []
   - m_Id: 1924591085776918
-    m_Localized: Bones +{0}
+    m_Localized: Bones +{bone}
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 1924591085776919
-    m_Localized: "\u2605 {0}/3"
+    m_Localized: "\u2605 {star}/3"
     m_Metadata:
-      m_Items: []
+      m_Items:
+      - rid: 4979853656306483282
   - m_Id: 1924591085776920
     m_Localized: No-rewind clear
     m_Metadata:
@@ -578,6 +598,43 @@ MonoBehaviour:
     m_Localized: Rewound clear
     m_Metadata:
       m_Items: []
+  - m_Id: 2162459649601536
+    m_Localized: 'A hint is revealed.
+
+      You can use more hints too.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2217518370484224
+    m_Localized: You can't pass from this side
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2219295564197888
+    m_Localized: Got the key! The gate of the same colour will open
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
-    RefIds: []
+    RefIds:
+    - rid: 4979853656306483282
+      type: {class: SmartFormatTag, ns: UnityEngine.Localization.Metadata, asm: Unity.Localization}
+      data:
+        m_Entries: 
+        m_SharedEntries:
+        - id: 54563881185281
+        - id: 68878059270144
+        - id: 68878059270150
+        - id: 76568915439616
+        - id: 76568944799746
+        - id: 88951276793856
+        - id: 1893249019113472
+        - id: 88951314542592
+        - id: 94519567675392
+        - id: 94519567675394
+        - id: 94519567675395
+        - id: 111827262468096
+        - id: 403868060053504
+        - id: 1924591085776915
+        - id: 1924591085776916
+        - id: 1924591085776918
+        - id: 1924591085776919
+        - id: 414729541611533

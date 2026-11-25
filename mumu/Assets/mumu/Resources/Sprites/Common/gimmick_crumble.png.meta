@@ -115,8 +115,8 @@ TextureImporter:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 32
-        height: 32
+        width: 96
+        height: 96
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -125,7 +125,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7283ca4708174b51a5ec35c5b82a3998
+      spriteID: ed066a4863c74fb7a0dd06211ac5486c
       internalID: 1500000001
       vertices: []
       indices: 
@@ -135,10 +135,10 @@ TextureImporter:
       name: gimmick_crumble_1
       rect:
         serializedVersion: 2
-        x: 32
+        x: 96
         y: 0
-        width: 32
-        height: 32
+        width: 96
+        height: 96
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -147,7 +147,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7334a84d74e240e69ae55d4cf8b87b3c
+      spriteID: 35431020c73d4985907cde195cb0757e
       internalID: 1500000002
       vertices: []
       indices: 
@@ -157,10 +157,10 @@ TextureImporter:
       name: gimmick_crumble_2
       rect:
         serializedVersion: 2
-        x: 64
+        x: 192
         y: 0
-        width: 32
-        height: 32
+        width: 96
+        height: 96
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -169,7 +169,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 66205d8faada4ca586efe4e589000273
+      spriteID: 8a95af37a63b43959360694b889d63c4
       internalID: 1500000003
       vertices: []
       indices: 
@@ -179,10 +179,10 @@ TextureImporter:
       name: gimmick_crumble_3
       rect:
         serializedVersion: 2
-        x: 96
+        x: 288
         y: 0
-        width: 32
-        height: 32
+        width: 96
+        height: 96
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -191,8 +191,96 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 1120e159b36b41c1a40174860935fe6b
+      spriteID: cb54c4a8ae5c433286b0a94f84997c64
       internalID: 1500000004
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gimmick_crumble_4
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7df4072b51de48348b8e4723fe63f2c7
+      internalID: 1500000005
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gimmick_crumble_5
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 669a4045d99e4b4ebb782e81f2952ad2
+      internalID: 1500000006
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gimmick_crumble_6
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 50bd5c961c1647df99425acda13f9984
+      internalID: 1500000007
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gimmick_crumble_7
+      rect:
+        serializedVersion: 2
+        x: 672
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 18d3afcc177b450bafdb63ff010ac283
+      internalID: 1500000008
       vertices: []
       indices: 
       edges: []
@@ -215,6 +303,10 @@ TextureImporter:
       gimmick_crumble_1: 1500000002
       gimmick_crumble_2: 1500000003
       gimmick_crumble_3: 1500000004
+      gimmick_crumble_4: 1500000005
+      gimmick_crumble_5: 1500000006
+      gimmick_crumble_6: 1500000007
+      gimmick_crumble_7: 1500000008
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

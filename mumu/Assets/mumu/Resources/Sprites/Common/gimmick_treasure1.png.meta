@@ -115,8 +115,8 @@ TextureImporter:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 32
-        height: 32
+        width: 96
+        height: 96
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -125,8 +125,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: edff7af42e0c4281bcdedc92671acfab
-      internalID: 1500000001
+      spriteID: d4c9ba603c8a412c8a14384d5367deb1
+      internalID: 1500000300
       vertices: []
       indices: 
       edges: []
@@ -135,10 +135,10 @@ TextureImporter:
       name: gimmick_treasure1_1
       rect:
         serializedVersion: 2
-        x: 32
+        x: 96
         y: 0
-        width: 32
-        height: 32
+        width: 96
+        height: 96
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -147,8 +147,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 99f927bd40f34fd5b17aa78df2b900c6
-      internalID: 1500000002
+      spriteID: 9abc69c2cfa0420bbcbc93c18964e9db
+      internalID: 1500000301
       vertices: []
       indices: 
       edges: []
@@ -157,10 +157,10 @@ TextureImporter:
       name: gimmick_treasure1_2
       rect:
         serializedVersion: 2
-        x: 64
+        x: 192
         y: 0
-        width: 32
-        height: 32
+        width: 96
+        height: 96
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -169,8 +169,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 40d5fb5204ef492dbdfbc8d0acfaf943
-      internalID: 1500000003
+      spriteID: 8586a5c8439c41e09ce0e0b0de5979c6
+      internalID: 1500000302
       vertices: []
       indices: 
       edges: []
@@ -179,10 +179,10 @@ TextureImporter:
       name: gimmick_treasure1_3
       rect:
         serializedVersion: 2
-        x: 96
+        x: 288
         y: 0
-        width: 32
-        height: 32
+        width: 96
+        height: 96
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -191,8 +191,96 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: fcf219c4e4da4461a4ba21624e7b9d5a
-      internalID: 1500000004
+      spriteID: 4e8e65ae0b58430a9e9bf715367999e6
+      internalID: 1500000303
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gimmick_treasure1_4
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 04f581e28c624a1680bae78e88cba2f5
+      internalID: 1500000304
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gimmick_treasure1_5
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3c473a2532524964a96b9ea30d25b08c
+      internalID: 1500000305
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gimmick_treasure1_6
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: da5e260ff8094442b326cd547494e532
+      internalID: 1500000306
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gimmick_treasure1_7
+      rect:
+        serializedVersion: 2
+        x: 672
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 204ffad975984354a19be85ecb0f1129
+      internalID: 1500000307
       vertices: []
       indices: 
       edges: []
@@ -211,10 +299,14 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      gimmick_treasure1_0: 1500000001
-      gimmick_treasure1_1: 1500000002
-      gimmick_treasure1_2: 1500000003
-      gimmick_treasure1_3: 1500000004
+      gimmick_treasure1_0: 1500000300
+      gimmick_treasure1_1: 1500000301
+      gimmick_treasure1_2: 1500000302
+      gimmick_treasure1_3: 1500000303
+      gimmick_treasure1_4: 1500000304
+      gimmick_treasure1_5: 1500000305
+      gimmick_treasure1_6: 1500000306
+      gimmick_treasure1_7: 1500000307
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

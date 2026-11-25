@@ -5,7 +5,7 @@ x,y,type,waypoint,gimmick
 3,0,Water,,
 4,0,Walkable,8,
 5,0,Walkable,9,
-6,0,Walkable,12,Fog
+6,0,Walkable,12,
 7,0,Walkable,13,
 8,0,Walkable,14,
 9,0,Water,,
@@ -53,7 +53,7 @@ x,y,type,waypoint,gimmick
 12,3,Water,,
 0,4,Walkable,61,
 1,4,Walkable,62,
-2,4,Walkable,2,Fog
+2,4,Walkable,2,
 3,4,Walkable,1,
 4,4,Water,,
 5,4,Water,,
@@ -86,10 +86,10 @@ x,y,type,waypoint,gimmick
 6,6,Water,,
 7,6,Water,,
 8,6,Water,,
-9,6,Walkable,27,Fog
+9,6,Walkable,27,
 10,6,Walkable,32,
 11,6,Walkable,33,
-12,6,Walkable,34,Fog
+12,6,Walkable,34,Treasure1
 0,7,Obstruct3,,
 1,7,Obstruct3,,
 2,7,Water,,
@@ -126,7 +126,7 @@ x,y,type,waypoint,gimmick
 7,9,Walkable,50,
 8,9,Walkable,43,
 9,9,Walkable,42,
-10,9,Walkable,39,GateRed;Treasure1
+10,9,Walkable,39,GateRed
 11,9,Walkable,38,
 12,9,Water,,
 0,10,Water,,

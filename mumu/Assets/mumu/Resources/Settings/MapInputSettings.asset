@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa5f7268782bcbe47928a83262f0b1d7, type: 3}
   m_Name: MapInputSettings
   m_EditorClassIdentifier: 
-  DragDelayPerBlock: 0.1
+  DragDelayPerBlock: 0.3
   DragRewindDelayPerBlock: 0.35
   NoDragRange: 2
   DragStepRate: 0.5
@@ -33,7 +33,7 @@ MonoBehaviour:
   TapMaxDuration: 0.3
   DoubleTapInterval: 0.35
   DoubleTapDistance: 80
-  TouchPadSize: 60
+  TouchPadSize: 250
   TouchPadMaxDistance: 30
   TouchPadAlpha: 0.25
   TouchPadEnabled: 1

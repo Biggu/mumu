@@ -29,6 +29,7 @@
 - プレハブは手で YAML を書かず、エディタのビルダー（`Scripts/Editor/*Builder.cs`）で組み立てる
 - **UI のルール**: 既にある UI を直す時は、Claude はコードを編集せず、直す箇所と内容を伝える（ユーザーが直す）。新しい UI は作ってよいが、UI パーツ（Image・Text・Layout など）を実行時に `new GameObject` / `UiFactory` で作らない。Resources のプレハブを読み込む（`PartsLoaderManager` / `PopupLoader` / `ResourceManager`）。スクロールの項目も Resources から読む（ずかんの `PugBookScrollItem` の形）
 - **プレハブは直接編集**: 作ったプレハブはユーザーが Unity で直接直す。ビルダーは未作成のものだけ作り、作成済みのプレハブは上書きしない
+- **UI プレハブは追加・編集しない**: UI のプレハブ（Resources/Prefabs の View・Popup・Common など）は Claude が作ったり書き換えたりしない。必要なものは「どのプレハブに・何を・どう置くか」を伝えて、ユーザーが Unity で作る。UI の見た目を変えたい時も同じ（コードの UI も既存は直さず、直す箇所を伝える）
 
 ---
 
@@ -115,30 +116,45 @@ Game の ☰ → 設定ポップアップ（SE / BGM / やりなおす / タイ�
 ```
 Assets/mumu/
   Animation/Block/      ブロックの Animator（BlockAnimatorBuilder が作る。Down / Up / PopUp / Drop）
-  Fonts/DotGothic16/    フォント（FontSetup が TMP の動的フォントを作る）
+  Fonts/DotGothic16/    フォント（TMP の動的フォント。UI で使う）
   Localization/         Locales, Tables（UI テーブル）, TextSetting.asset
   Scenes/system.unity
   Scripts/
-    Data/      CsvUtility, MapCsv（Resources の CSV を読む）, MapData, ThemeDefine（19 テーマ）, CharacterMaster（Unity 専用。マップ生成のテストには入れない）
-               MapGenerator（partial。本体・公開 API と生成の流れ）, MapShape（形）, MapBridge（島をつなぐ橋）, MapPath（経路）, MapObstruct（通れないブロック）, MapGrid, MapCell
-    Define/    MumuEnum（eBlockType, eBlockSubType, eSe, BlockTypeUtility など）
-    DebugTools/  DebugMenu, DebugTools（デバッグ用のキー・メニュー）
-    Editor/    ビルダー（TitleScreenBuilder, GameScreenBuilder, PopupPrefabBuilder, StageMapScreenBuilder, GardenScreenBuilder, PartsPrefabBuilder, BlockAnimatorBuilder, MapInputSettingsBuilder, RainbowStarBuilder, AmbientParticlesBuilder）, MapDataEditor, DebugMapFile, LocalizationSetup, FontSetup, SaveDataMenu, ThemeDecoSheetImporter, SystemSceneStartup, EditorUiBuilder, EditorAssetUtility, EditorBuildStamp, MumuButtonEditor
-    InGame/    ゲームの中身（フォルダごとに役割を分けてある）
-      InGameMap/  InGameMap（統括・公開 API）, MapBlockView（ブロックの生成と表示）, MapPathInput（押す・ドラッグ・1マス進める）, MapMarkers（走るパグと矢印）, MoveSound（移動の効果音）, MapDebugTools, MapLayout（マスの位置・上面・範囲・RaiseHeight）, TilePicker（画面→マス）, RefusalFeedback（進めなかった演出）, MapClearSequence（クリア演出）, PuzzlePath（経路の並び）, IsoDepth（描画順）, PointArrow, ePressTarget
-      Hint/       HintPlan（ヒント。設計した経路の一部を出す）
-      Gimmick/    ギミックの決まりと見た目。新しいギミックはここに足す: GimmickUtility（種類と判定）, GimmickMaster・GimmickCounts（CSV と数）, GimmickPlacer（マップに置く）, PathRules（扉・やじるし・まがる・まっすぐの通り方）, GimmickSync（経路に合わせて扉・橋の見た目）, GimmickSprites, BlockGimmickView（上面の矢印・扉・こわれる橋）, BlockFloatingItems（浮かぶほね・カギ）
-      Block/      Block（prefab の部品と公開 API、ラベル・デコ・吹き出し）, BlockPathView（線・足あと・光る枠）, BlockPugView（Goal のパグ）, BlockCheckpointStar（★）, BlockShake（横揺れ）
-      Input/      MapInputController（指の振り分け・経路ドラッグ・線のプレビュー・自動フォーカス）, MapInputSettings（操作の数値。Resources/Settings）, MapViewController（移動・拡大縮小。IMapCameraTarget の地図なら何でも動かせる）, IMapCameraTarget, TapDetector（タップ・ダブルタップ）
-      Pug/        PlayerPug, PugSprites, CharacterSprites, PugIcons
-      Garden/     GardenMap（25×25、日付で決まる配置）, GardenLayout（MapGenerator.GenerateTerrain で作る）, GardenPug（状態・歩き・タップで跳ねる）, GardenPugRoute（行き先）, GardenPugZzz（お昼寝の z）, GardenInputController（箱庭のカメラ操作）
-      Theme/      ThemeSprites（テーマの画像）, ThemeBackground（背景）
-      Title/      TitleStage
-    System/    CommonUtility（Punch・PlaySe・GetOrAddComponent）, TokenUtility（Cancel / Restart / Ensure）, SpriteUtility（LoadCached・FilterByPrefix）, UiFactory（CreateImage・CreateText・SetFootRect・SetPugImage）, GridUtility（NoCell・Directions4・IsoPosition・GetPlaneAngle・ExpandBounds）, ViewManager, ResourceManager, SoundManager（eSe・TitleBgmId）, SaveDataManager, SaveCrypto（暗号化）, UserSaveData, GameSession, StageProgress, StageRecord, PugCollection, GameSettings, TextLocalizer, MonoSingleton, Singleton, SystemManager, SafeAreaManager, PopupManager（ポップアップの開閉と通知・トースト・おはなし。uiRoot / notificationRoot の下に出す）, PartsLoaderManager（Prefabs/Common の部品を作る）…
-    UI/Common/ Notification（真ん中のお知らせ）, Toast（画面下のお知らせ）, ThemeStory（テーマのおはなし）, BoneBonusOverlay（ボーナス）, MumuButton（使えない時はグレーでお知らせ）, UiTween, FadeScreen, HeartEffect, ConfettiEffect, AmbientParticles, AmbientCritters（横切る生き物）, PugAura（tier5・6 のキラキラ）, RainbowStar, SpriteFrameAnimation, UiImageUtility
-    UI/Parts/  PugBookScrollItem
-    UI/Popup/  PopupBase, BaseParam / AlertParam / SettingsParam / PugBookParam / ConfirmParam, SettingsPopup, MessageDialog, ConfirmDialog（2つのボタンの確認。おにわ・ずかんで共通）, PugBookPopup, PopupLoader
-    UI/View/   ViewBase, TitleView, GameView, GoalGauge, StageMapView, GardenView
+    Core/
+      Managers/   SystemManager（起動）, ViewManager, ResourceManager, SoundManager（eSe・TitleBgmId）, PopupManager（ポップアップ・お知らせ・トーストの順番）, PartsLoaderManager（Prefabs/Common の部品）, EffectManager, SafeAreaManager, MonoSingleton, Singleton
+      Save/       SaveDataManager, SaveCrypto（暗号化）, UserSaveData, GameSettings
+      Progress/   GameSession, StageProgress, StageRecord, PugCollection
+      Utility/    CommonUtility（Punch・PlaySe・GetOrAddComponent）, GridUtility（NoCell・Directions4・IsoPosition）, SpriteUtility（LoadCached・FilterByPrefix）, TokenUtility（Cancel / Restart / Ensure）
+    Localization/  TextLocalizer（Get・GetNamed・PreloadAsync）, MumuText_AutoGenerate（Tool > GenerateLocalizeText が作る。直接編集しない）
+    Data/
+      Master/     CsvUtility, MapCsv（Resources の CSV を読む）, CharacterMaster（Unity 専用。マップ生成のテストには入れない）, ThemeDefine（19 テーマ）
+      Map/        MapData, MapGrid, MapPath（経路）, eCell（マスの状態）
+      Generator/  MapGenerator（partial。本体・公開 API と生成の流れ）, MapShape（形）, MapBridge（島をつなぐ橋）, MapObstruct（通れないブロック）
+    Define/    CommonDefine（共通の定数）, MumuEnum（eBlockType, eBlockSubType, eSe, BlockTypeUtility など）
+    DebugTools/  DebugOverlay（デバッグ画面。D キーで開閉）, DebugItem, DebugTools, GimmickTestMap
+    Editor/    ビルダー（BlockAnimatorBuilder, AmbientParticlesBuilder, GoalPugPrefabBuilder, RingBlockPrefabBuilder, MapInputSettingsBuilder）, MapDataEditor, DebugMapFile, LocalizationSetup, GenerateLocalizeText, SaveDataMenu, ThemeDecoSheetImporter, SystemSceneStartup, EditorAssetUtility, EditorBuildStamp, MumuButtonEditor
+    Game/      ゲームの中身（盤面・ギミック・パグ・入力）
+      Map/      InGameMap（統括・公開 API）, MapBlockView（ブロックの生成と表示・外の枠）, RingBlock（マスの外の枠）, MapPathInput（押す・ドラッグ・1マス進める）, MapMarkers（走るパグと矢印）, MoveSound（移動の効果音）, MapDebugTools, MapLayout（マスの位置・上面・範囲）, TilePicker（画面→マス）, RefusalFeedback（進めなかった演出）, MapClearSequence（クリア演出）, PuzzlePath（経路の並び）, IsoDepth（描画順）, PointArrow, ePressTarget, HintPlan（ヒント）
+      Block/    Block（prefab の部品と公開 API）, BlockPathView（線・足あと・光る枠）, BlockPugView（Goal のパグ）, BlockCheckpointStar（★）, BlockShake（横揺れ）
+      Gimmick/  ギミックの決まりと見た目。新しいギミックはここに足す: GimmickUtility, GimmickMaster・GimmickCounts（CSV と数）, GimmickPlacer, PathRules, GimmickSync, GimmickSprites, BlockGimmickView, BlockFloatingItems
+      Input/    MapInputController（指の振り分け・経路ドラッグ）, MapInputSettings（操作の数値。Resources/Settings）, MapViewController（移動・拡大縮小）, IMapCameraTarget, TapDetector
+      Pug/      PlayerPug（経路を走るパグ）, PugSprites, CharacterSprites, PugIcons
+      Theme/    ThemeSprites, ThemeBackground
+    Garden/     GardenMap（25×25、日付で決まる配置）, GardenLayout, GardenPug（状態・歩き・タップで跳ねる）, GardenPugRoute, GardenPugZzz（お昼寝の z）, GardenInputController（箱庭のカメラ操作）
+    Title/      TitleStage（タイトルの背景）
+    UI/
+      Views/      ViewBase
+        Game/     GameView, GameHeaderPart（ゲームのヘッダー）, GoalGauge, TouchPad（画面左下の操作の輪）
+          Clear/  ClearSummary（クリアの札）, BoneBonusOverlay（ボーナス）
+        Garden/   GardenView
+        StageMap/ StageMapView
+        Title/    TitleView
+      Popups/     PopupBase, BaseParam / AlertParam / SettingsParam / ConfirmParam, SettingsPopup, ConfirmPopup（2つのボタンの確認。おにわ・ずかんで共通）, MessagePopup, PopupLoader
+        PugBook/  PugBookPopup, PugBookParam, PugBookScrollItem
+      Messages/   Notification（真ん中のお知らせ）, Toast（画面下のお知らせ）, ThemeStory（テーマのおはなし）
+      Widgets/    MumuButton（使えない時はグレーでお知らせ）, FadeScreen, FloatText
+      Effects/    AmbientParticles, AmbientCritters（横切る生き物）, ConfettiEffect, HeartEffect, PugAura（tier5・6 のキラキラ）, RainbowStar, SpriteFrameAnimation
+      Utility/    UiFactory（CreateImage・CreateText・SetFootRect・SetPugImage）, UiTween, UiImageUtility
   Resources/
     MapData/      map_list.csv, maps/map_000001〜000500.csv
     MasterData/   character.csv（501 匹）, gimmick.csv
@@ -162,7 +178,7 @@ Assets/mumu/
 `x,y,type,waypoint` — type は eBlockType の名前、waypoint は 1 始まりの経路順（空欄 = 経路外）。y=0 が画面の奥。書かれていないマスは Empty
 
 eBlockType: `Empty=0, Walkable=1, Obstruct1=2, Start=3, Goal=4, Water=5, Obstruct2=6, Obstruct3=7, Obstruct4=8, Bridge=9`
-- Walkable と Bridge が通れる。Obstruct1〜4 はテーマのデコ 1〜4。Start・Goal の周り 3x3 の障害物はデコを出さない（隠れないように）
+- Walkable と Bridge が通れる。Obstruct1〜4 は通れないブロックで、テーマの土台 11 を使う（デコは出さない）。Start・Goal の周り 3x3 の障害物はデコを出さない（隠れないように）
 
 ### MasterData/character.csv
 `id,name_ja,name_en,sprite,tier,fur,outfit,marking`
@@ -192,12 +208,16 @@ eBlockType: `Empty=0, Walkable=1, Obstruct1=2, Start=3, Goal=4, Water=5, Obstruc
 ## 6. 画像・音の決まり
 
 - テーマ（`ThemeDefine`、19 個）: 1 meadow, 2 summer, 3 winter, 4 autumn, 5 spring, 6 sakura, 7 desert, 8 cake, 9 pudding, 10 city, 11 village, 12 sea, 13 ice, 14 office, 15 space, 16 underwater, 17 moon_forest, 18 castle, 19 mountain（それぞれ雰囲気のパーティクル設定あり）。マップ生成（mapgen）は今 1〜14 だけを使う
-- テーマ画像 `Sprites/Themes/theme_XXXXXX/XXXXXX_N`: 0 未通過 / 1 通過済み / 2〜5 高いデコ（4コマのシート、169x281 1コマ）/ 6〜7 普通のデコ（静止画）/ 8〜9 小さいデコ（静止画）/ 10 水 / 11 通れないブロックの土台（`Block.ObstructTint` で暗く表示）/ 12 橋 / bg 背景タイル
+- テーマ画像 `Sprites/Themes/theme_XXXXXX/XXXXXX_N`: 0 未通過 / 1 通過済み / 2〜5 高いデコ（木・4コマのシート、676x281、1コマ 169x281）/ 6〜9 静止画のデコ（169x281）/ 10 水 / 11 通れないブロックの土台（`Block.ObstructTint` で暗く表示）/ 12 橋 / bg 背景タイル
+- **デコの大きさ（静止画 6〜9）**: ブロックの中に 5 px ずつ余白を空けて収まる。幅は最大 50 units（ブロック 60 − 左右 5）。縦横の比は保つ。大きくしない。テーマ 1 が基準
+- **木（2〜5）**: 基本は テーマ 1 の木の形。葉の色はテーマごと（ブロックの色と名前に合わせる。1 テーマの中でも色を変える）。木の大きさはテーマ 1 と同じ
+- **特別なテーマ（葉の代わりに中身）**: 8 cake（ケーキ・ろうそく・キャンディ・はちみつ、テーマ 8 は承認済み）、27（ケーキと同じ）、9・28 pudding（クリーム・いちご）、14・33 office（秋の色の木）、15 space（地球・太陽・月・星）、13・31・32 ice（葉のない木の枝、雪）、10・29 city（普通の木）
 - デコの出し方: マップの外の後ろ2マス（左上・右上の辺）に枠。外側は高いデコ、内側は 60% 小さい・普通、20% なし、20% 高い（`MapBlockView.buildRing`、位置とテーマのハッシュで毎回同じ）。マップの中の通れないブロックは平らな土台だけ（デコなし）
-- 夜のテーマ（20〜33）は昼のテーマ（1〜14）のデコをコピーして使う（色は夜用の土台だけ）
-- ブロックはアイソメ。`posX = (x - flippedY) * 30`, `posY = (x + flippedY) * 15`（`flippedY = h-1-y`）、ブロック 60px、上面判定はひし形、持ち上げ 12px、描画順 `SortIndex`
+- **デコの影**: 枠（`RingBlock`）の `decoShadow`（プレハブの子 Image、Sprite は `deco_shadow`）。デコの根元の下に薄い楕円を出す。プレハブの割り当ては手作業（`ring_block.prefab` の RingBlock の Deco Shadow）
+- 夜のテーマ（20〜33）は昼のテーマをコピーせず、それぞれのテーマの木・デコを使う（テーマごとの色）
+- ブロックはアイソメ。`posX = (x - flippedY) * 30`, `posY = (x + flippedY) * 15`（`flippedY = h-1-y`）、ブロック 60 units、上面判定はひし形、持ち上げ `MapLayout.RaiseHeight` = 6 units（通れないブロックも持ち上がる。浮いて見える点は未解決）、描画順 `SortIndex`
 - パグのシート: tools/README.md 参照。表示サイズ 44px、pivot (0.5, 0.08) で足元を上面の中心に
-- SE（`eSe`、`Sound/SE/se_{6桁}`）: 1 Click（ボタン）/ 3 Bark2（進めない）/ 4 BlockGain（1マス進む）/ 5 BlockGain2（チェックポイント・Goal 解放）/ 6 BlockMinus（巻き戻す）/ 7 WinJingle（クリア）/ 28 AlertChime（今日のおさんぽが終わった）など、全部は `eSe`（`Scripts/System/SoundManager.cs`）。`MumuButton` はクリックで Click 音を鳴らす（インスペクターで音の変更・無効化、暗幕は無音）
+- SE（`eSe`、`Sound/SE/se_{6桁}`）: 1 Click（ボタン）/ 3 Bark2（進めない）/ 4 BlockGain（1マス進む）/ 5 BlockGain2（チェックポイント・Goal 解放）/ 6 BlockMinus（巻き戻す）/ 7 WinJingle（クリア）/ 28 AlertChime（今日のおさんぽが終わった）など、全部は `eSe`（`Scripts/Core/Managers/SoundManager.cs`）。`MumuButton` はクリックで Click 音を鳴らす（インスペクターで音の変更・無効化、暗幕は無音）
 - BGM（`Sound/BGM/bgm_{3桁}`）: タイトルは 000（`SoundManager.TitleBgmId`）、テーマ ID 1〜14 は bgm_001〜014、曲のないテーマは 000。おにわはテーマ 1。同じ曲なら流し直さない。bgm_999 は使っていない
 
 ---
@@ -211,26 +231,19 @@ eBlockType: `Empty=0, Walkable=1, Obstruct1=2, Start=3, Goal=4, Water=5, Obstruc
 
 ---
 
-## 8. エディタのビルダー（プレハブを作る）
+## 8. エディタのツール（プレハブのうちゲーム用だけ作る）
 
-コンパイル後に自動で走る（作成済みの目印がなければ作り直す）。手で作り直す時はメニューから。
+ゲーム用のプレハブは、作成済みでなければコンパイル後に自動で作る。UI のプレハブはエディタで直接作って直す（ビルダーは削除済み）。手で作り直す時はメニューから。
 
 | メニュー | 作るもの | 自動で作り直す目印 |
 |---|---|---|
-| mumu > Build Title Screen | View/Title（背景ステージ・看板・冒険/おさんぽ/おにわ・⚙） | `ui/gardenButton` がない |
-| mumu > Build Game Header | View/Game のヘッダー（ゲージ・王冠・★・☰・ステージ札）。マップ部分は残す | `ui/header/crown` がない |
-| mumu > Build Popups | Popup/settings_popup（縦並び、隠したボタンの分は詰める）・message_dialog（見出し・アイコン・本文・はい/いいえ） | どちらかがない、`panel/icon` がない |
-| mumu > Build Garden Screen | View/Garden | ない時 |
-| mumu > Build Stage Map Screen | View/StageMap | ない時 |
 | mumu > Build Block Animator | ブロックの Animator | — |
 | mumu > Build Ambient Effects | Prefabs/Ambient/ambient_{id:000}（テーマごとの雰囲気の粒）。Sorting Layer `Game` / `Effect` / `UI` も足す | 未作成のプレハブがある時だけ作る（作成済みは上書きしない） |
-| mumu > Setup Font | DotGothic16 の TMP フォント | — |
 | mumu > Setup Localization | UI テーブル | キーが足りない時 |
 | mumu > Save Data > Reset / Export JSON / Import JSON / Open Folder | 保存データを新規状態に／読める JSON に書き出す／書き換えた JSON を暗号化して保存／フォルダを開く | — |
 | Map > Edit | マップエディタ | — |
 
 - **UI キット**（`Sprites/UI/Kit/`、一覧 [ui_kit_preview.png](ui_kit_preview.png)）: 8 色（cream, pink, mint, sky, lemon, lavender, brown, gray）の `kit_frame_*`（パネル）/ `kit_frame_thin_*`（中が透明な枠）/ `kit_button_*` / `kit_tab_*` / `kit_banner_*`（リボンの見出し）/ `kit_bubble_*`（吹き出し）/ `kit_line_*`・`kit_line_dotted_*`（区切り線）/ `kit_bar_fill_*` と `kit_bar_back`（ゲージ）、白いアイコン `kit_icon_*`（check, cross, lock, question, info, plus, minus, arrow_up/down/left/right, heart, star, exclamation, gift, bell, pause, play, trash。Image の色で着色できる）、`kit_badge_alert`（赤丸！）/ `kit_badge_dot`（赤い点）/ `kit_badge_new` / `kit_badge_count`（数字用の赤いピル、9-slice）、`kit_checkbox_on/off`・`kit_radio_on/off`。まだどの画面でも使っていない（UI を作り直す時用）
-- 共通の組み立て処理は `EditorUiBuilder`（Create / Stretch / SetRect / AddImage / AddButton / AddText / AddPlainText / LoadSprite / SetField / BuildToggleRow / BuildCloseButton / BuildDim）
 - ポップアップは開く時に `PopupLoader` で Resources から読んで画面の一番手前に出し、閉じたら破棄
 - フェードは `FadeScreen.Instance`（Prefabs/Common/fade、専用 Canvas sortingOrder 1000）
 

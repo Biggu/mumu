@@ -175,7 +175,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7baf981b56aa6ac4ba0a173ff3d35b54, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::mumu.MessageDialog
+  m_EditorClassIdentifier: Assembly-CSharp::mumu.MessagePopup
   panel: {fileID: 5987412346097692932}
   titleText: {fileID: 809914638420232337}
   bodyText: {fileID: 1838988237678317784}

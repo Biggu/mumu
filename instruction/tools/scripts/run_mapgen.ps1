@@ -6,7 +6,7 @@
 # 使い方: powershell -ExecutionPolicy Bypass -File run_mapgen.ps1 [-Backup]
 param(
     [switch]$Backup,
-    [string]$Project = 'D:\test1\mumu'
+    [string]$Project = 'D:\test\mumu'
 )
 $ErrorActionPreference = 'Stop'
 $mapData = Join-Path $Project 'Assets\mumu\Resources\MapData'

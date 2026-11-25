@@ -528,7 +528,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 367abe8c12827f44aa8cabc9ac1c8284, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::mumu.ConfirmDialog
+  m_EditorClassIdentifier: Assembly-CSharp::mumu.ConfirmPopup
   panel: {fileID: 3434785358202872223}
   titleText: {fileID: 6308064155260440930}
   firstButton: {fileID: 6752165299976550731}

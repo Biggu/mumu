@@ -27,10 +27,10 @@ namespace mumu
         private const string LocaleFolder = "Assets/mumu/Localization/Locales";
         private const string TableFolder = "Assets/mumu/Localization/Tables";
         /// <summary>文章を書き直した時は、この名前を変えると次のコンパイルで再設定される</summary>
-        private const string StampKey = "LocalizationSetup_kanji";
+        private const string StampKey = "LocalizationSetup_hint_used";
 
         /// <summary>対応言語（先頭が日本語）</summary>
-        private static readonly string[] LocaleCodes = { "ja", "en" };
+        public static readonly string[] LocaleCodes = { "ja", "en" };
 
         /// <summary>初期テキスト（キー, 日本語, 英語）</summary>
         private static readonly string[][] Entries =
@@ -46,7 +46,7 @@ namespace mumu
             new[] { "TO_TITLE", "タイトルへ", "Title" },
             new[] { "ADVENTURE", "冒険", "Adventure" },
             new[] { "STROLL", "お散歩", "Stroll" },
-            new[] { "STAGE", "ステージ {0}", "Stage {0}" },
+            new[] { "STAGE", "ステージ {stage}", "Stage {stage}" },
             new[] { "OK", "OK", "OK" },
             new[] { "YES", "はい", "Yes" },
             new[] { "NO", "いいえ", "No" },
@@ -56,36 +56,36 @@ namespace mumu
             new[] { "ALL_CLEAR_TITLE", "全部クリア！", "All Clear!" },
             new[] { "ALL_CLEAR_BODY", "今あるステージは全部クリア！\n今後のアップデートをお楽しみに。\n最後のステージをもう一度遊べます。", "You cleared every stage!\nMore stages are coming in future updates.\nYou can replay the last stage." },
             new[] { "GARDEN", "お庭", "Garden" },
-            new[] { "GARDEN_COUNT", "仲間 {0}匹", "Friends: {0}" },
+            new[] { "GARDEN_COUNT", "仲間 {count}匹", "Friends: {count}" },
             new[] { "GARDEN_EMPTY", "まだ仲間がいないよ。\n冒険やお散歩でパグを助けよう！", "No friends yet.\nRescue pugs in Adventure or Stroll!" },
             new[] { "UNKNOWN", "？？？", "???" },
             new[] { "CLEAR", "CLEAR!", "CLEAR!" },
             new[] { "PERFECT", "PERFECT!", "PERFECT!" },
             new[] { "PUG_JOINED_TITLE", "仲間が増えた！", "New friend!" },
-            new[] { "PUG_JOINED_BODY", "{0} が仲間になった！\nお庭で会えるよ。", "{0} joined you!\nSay hi in the Garden." },
-            new[] { "STROLL_DAILY", "お散歩 {0}/{1}", "Stroll {0}/{1}" },
+            new[] { "PUG_JOINED_BODY", "{name} が仲間になった！\nお庭で会えるよ。", "{name} joined you!\nSay hi in the Garden." },
+            new[] { "STROLL_DAILY", "お散歩 {num}/{total}", "Stroll {num}/{total}" },
             new[] { "DAILY_DONE_TITLE", "今日のパグチャンスは終わり", "No more pug chances today" },
             new[] { "DAILY_DONE_BODY", "今日のお散歩5回が終わったよ。\nここからはパグに会えない普通のお散歩です。\n明日も5回チャンスがあるよ！", "You used today's 5 strolls.\nFrom now on, strolls won't have pugs to rescue.\nCome back tomorrow for 5 more chances!" },
-            new[] { "STAGE_RANGE", "ステージ {0}〜{1}", "Stages {0}-{1}" },
+            new[] { "STAGE_RANGE", "ステージ {first}〜{last}", "Stages {first}-{last}" },
             new[] { "PLAY", "遊ぶ", "Play" },
-            new[] { "GARDEN_STATUS", "仲間 {0}匹  骨 {1}", "Friends {0}  Bones {1}" },
-            new[] { "CONFIRM_REWIND", "{0}マス戻りますか？\n戻ると「戻らずクリア」のボーナスはもらえないよ。", "Go back {0} tiles?\nYou won't get the no-rewind clear bonus." },
-            new[] { "GIMMICK_NEW_TITLE", "新しいギミック「{0}」", "New gimmick: {0}" },
+            new[] { "GARDEN_STATUS", "仲間 {count}匹  骨 {bone}", "Friends {count}  Bones {bone}" },
+            new[] { "CONFIRM_REWIND", "{count}マス戻りますか？\n戻ると「戻らずクリア」のボーナスはもらえないよ。", "Go back {count} tiles?\nYou won't get the no-rewind clear bonus." },
+            new[] { "GIMMICK_NEW_TITLE", "新しいギミック「{name}」", "New gimmick: {name}" },
             new[] { "PUG_BOOK", "図鑑", "Pug Book" },
-            new[] { "PUG_BOOK_BONES", "持っている骨 {0}", "Bones: {0}" },
+            new[] { "PUG_BOOK_BONES", "持っている骨 {bone}", "Bones: {bone}" },
             new[] { "PUG_BUY_TITLE", "仲間にする？", "Adopt?" },
-            new[] { "PUG_BUY_BODY", "{0} を骨 {1}個と交換して\n仲間にする？", "Trade {1} bones\nto adopt {0}?" },
-            new[] { "PUG_BUY_SHORT", "骨があと {0}個足りないよ。\nお散歩や冒険で集めよう！", "You need {0} more bones.\nCollect them on walks and adventures!" },
+            new[] { "PUG_BUY_BODY", "{name} を骨 {bone}個と交換して\n仲間にする？", "Trade {bone} bones\nto adopt {name}?" },
+            new[] { "PUG_BUY_SHORT", "骨があと {bone}個足りないよ。\nお散歩や冒険で集めよう！", "You need {bone} more bones.\nCollect them on walks and adventures!" },
             new[] { "PUG_NOT_FOR_SALE", "お散歩で会えるかも", "Meet on a stroll" },
             new[] { "PUG_DUPLICATE_TITLE", "もう仲間だよ！", "Already a friend!" },
-            new[] { "PUG_DUPLICATE_BODY", "{0} はもう仲間だよ。\nかわりに骨 {1}個もらったよ！", "{0} is already your friend.\nYou got {1} bones instead!" },
+            new[] { "PUG_DUPLICATE_BODY", "{name} はもう仲間だよ。\nかわりに骨 {bone}個もらったよ！", "{name} is already your friend.\nYou got {bone} bones instead!" },
             new[] { "PUG_OWNED", "持ってる", "Owned" },
             new[] { "PUG_EQUIP", "一緒に行く", "Come along" },
             new[] { "GARDEN_REST", "お休み", "Rest" },
             new[] { "PUG_EXCHANGE", "交換", "Exchange" },
             new[] { "PUG_TO_GARDEN", "庭へ", "To garden" },
             new[] { "NOTICE_UNAVAILABLE", "今はできないよ", "Not available right now" },
-            new[] { "WANDERFUL_BONUS", "ワンダフルボーナス！ 骨 +{0}", "Woof-derful Bonus! Bones +{0}" },
+            new[] { "WANDERFUL_BONUS", "ワンダフルボーナス！ 骨 +{bone}", "Woof-derful Bonus! Bones +{bone}" },
             new[] { "WANDERFUL_DETAIL", "戻らずパーフェクトクリア", "Perfect clear without rewinding" },
             // テーマのおはなし（文章はまだ。テーマごとに書き直す）
             new[] { "THEME_STORY_1", "[仮] テーマ1の おはなし", "[TODO] Theme 1 story" },
@@ -157,21 +157,24 @@ namespace mumu
             new[] { "THEME_NAME_32", "夜のこおり", "Night Ice" },
             new[] { "THEME_NAME_33", "夜のオフィス", "Night Office" },
             new[] { "THEME_NAME_40", "ボーナス", "Bonus" },
-            new[] { "STAGE_THEME", "ステージ {0}　{1}", "Stage {0}  {1}" },
-            new[] { "STROLL_CHANCES", "今日 あと {0}/{1}回", "{0}/{1} left today" },
+            new[] { "STAGE_THEME", "ステージ {stage}　{theme}", "Stage {stage}  {theme}" },
+            new[] { "STROLL_CHANCES", "今日 あと {num}/{total}回", "{num}/{total} left today" },
             new[] { "FILTER_UNOWNED", "未所持のみ", "Not owned only" },
-            new[] { "SUMMARY_BONES", "ほね +{0}", "Bones +{0}" },
-            new[] { "SUMMARY_STARS", "★ {0}/3", "★ {0}/3" },
+            new[] { "SUMMARY_BONES", "ほね +{bone}", "Bones +{bone}" },
+            new[] { "SUMMARY_STARS", "★ {star}/3", "★ {star}/3" },
             new[] { "SUMMARY_NOREWIND", "もどらずクリア", "No-rewind clear" },
             new[] { "SUMMARY_REWOUND", "もどってクリア", "Rewound clear" },
-            new[] { "HINT_CONFIRM", "ヒントを使う？ 骨 {0} を使うよ", "Use a hint? It costs {0} bones" },
+            new[] { "HINT_CONFIRM", "ヒントを使う？ 骨 {bone} を使うよ", "Use a hint? It costs {bone} bones" },
             new[] { "HINT_USE", "使う", "Use" },
+            new[] { "HINT_USED", "ヒントを出したよ。\nのこりのヒントも使えるよ。", "A hint is revealed.\nYou can use more hints too." },
             new[] { "HINT_CANCEL", "やめる", "Cancel" },
             new[] { "PUG_UNEQUIP", "外す", "Leave home" },
             new[] { "PUG_EQUIPPED", "一緒", "With you" },
             new[] { "TOAST_GATE", "カギを取ってから通ろう", "Get the key first to open this gate" },
             new[] { "TOAST_CRUMBLE", "橋が壊れた！ もう戻れないよ（やり直しはメニューから）", "The bridge broke! No going back (retry from the menu)" },
             new[] { "TOAST_CRUMBLE_LOCKED", "壊れた橋より前には戻れないよ", "You can't go back past a broken bridge" },
+            new[] { "TOAST_ONEWAY", "この向きからは通れないよ", "You can't pass from this side" },
+            new[] { "TOAST_KEY", "カギを手に入れた！ 同じ色の扉が開くよ", "Got the key! The gate of the same colour will open" },
         };
 
         /// <summary>
@@ -310,7 +313,9 @@ namespace mumu
         private static void setEntry(StringTableCollection _collection, Locale _locale, string _key, string _value)
         {
             var table = (StringTable)_collection.GetTable(_locale.Identifier);
-            table.AddEntry(_key, _value);
+            StringTableEntry entry = table.AddEntry(_key, _value);
+            // {name} や {0} を使う文字は Smart String として登録する（通常の文字は String.Format で埋めるため）
+            entry.IsSmart = _value.Contains("{");
             EditorUtility.SetDirty(table);
         }
 

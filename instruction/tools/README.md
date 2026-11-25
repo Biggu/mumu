@@ -27,10 +27,10 @@ tools/
 | `run_gimmick_gen.ps1` | ギミックのアイコン（やじるし・まがる・まっすぐ・宝箱 木/銀/金・カギ・扉・ワープ入口/出口・こわれる橋、通貨アイコンのほね。カギ・扉・ワープは白で描いてゲームで色をつける）→ `Sprites/Common/gimmick_*.png` |
 | `run_ambient_gen.ps1` | 雰囲気の粒の画像（四角 `ambient_square`・丸 `ambient_round`、ドット絵のまま）→ `Sprites/Common/ambient_*.png`。`art/AmbientGen.cs`。プレビューは `%TEMP%\mumu_gen\ambient\*_preview.png` |
 | `run_uikit_gen.ps1` | UI キット 100 枚 → `Sprites/UI/Kit/kit_*.png`（9-slice 自動）。一覧は `instruction/ui_kit_preview.png` |
-| `run_theme_gen.ps1` | 14 テーマのブロック・デコ・水・橋・背景 → `Sprites/Themes/theme_XXXXXX`。テーマの中身は `art/ThemeGen.cs` の `ThemeGen.All()` |
+| `run_theme_gen.ps1` | **古い生成（14 テーマ・ブロック・デコ・水・橋・背景）**。今の 1〜33 のテーマ画像（葉の色、特別なテーマの中身、デコの大きさ 静止画は幅 50 units 以内）はこの生成では作っていない。現在の画像は作業用スクリプト（保存していない）で作った。テーマを変える時は `Sprites/Themes/theme_XXXXXX` を直接直す、または作業用スクリプトを `art/` に保存してから使う |
 | `run_mapgen.ps1` | 冒険マップ 1〜50 を作り直す（上書き。`-Backup` 推奨）。設定は `mapgen/Program.cs` |
 | `run_gentest.ps1` | MapGenerator を 570 マップで確認（ギミックありも）。`invalid maps: 0/570`・`gimmick maps invalid: 0/570`・`play check fail: 0`（PuzzlePath で設計の経路をたどってクリアできるか）・`rule tests failed: 0`（扉・こわれる橋・ワープの決まりを小さいマップで確認）・`plain maps treasure wrong: 0`（ギミックなしでも宝箱が1つ）・`wrongly allowed: 0`（やじるしを横から出られないか）が出れば OK |
-| `verify_build.ps1` | プロジェクト（既定 `D:\test1\mumu`、`-Project` で変更）の Assets/mumu/Scripts の全 .cs をコンパイル。プロジェクト直下の `Assembly-CSharp*.csproj` から `verify` 用の csproj を毎回作り直す。`0 エラー` と出れば OK |
+| `verify_build.ps1` | プロジェクト（既定 `D:\test\mumu`、`-Project` で変更）の Assets/mumu/Scripts の全 .cs をコンパイル。プロジェクト直下の `Assembly-CSharp*.csproj` から `verify` 用の csproj を毎回作り直す。`0 エラー` と出れば OK |
 | `SpriteMeta.ps1` | .meta を書く共通関数（`Write-SheetMeta` / `Write-SingleMeta` / `Write-FolderMeta`） |
 
 ## art/（画像ジェネレーター）
@@ -41,7 +41,7 @@ tools/
 | `UiGen.cs` | `UiGen` | `Run(outDir)` 基本 UI |
 | `UiGen3.cs` | `UiGen3` | `Run(outDir)` ★・ゲージ・メニュー/やりなおし/ホーム |
 | `UiGen4.cs` | `UiGen4` | `Run(outDir)` 王冠・ハート・肉球 |
-| `ThemeGen.cs` | `ThemeGen` | `Run(outRoot)` 全テーマ＋一覧シート |
+| `ThemeGen.cs` | `ThemeGen` | `Run(outRoot)` 古い 14 テーマの生成（今の 1〜33 の画像は作っていない。`run_theme_gen.ps1` の注意を見る） |
 | `GimmickGen.cs` | `GimmickGen` | `Run(outDir)` ギミックのアイコン |
 | `UiKitGen.cs` | `UiKitGen` | `Run(outDir)` UI キット（色は `Palette`、アイコンは `Icons` の文字の絵、9-slice 幅は `kit_border.txt` に出す） |
 | `CritterGen.cs` | `CritterGen` | `Run(sheetPath)` 横切る生き物のシート（`Names` の順に行） |
@@ -55,9 +55,9 @@ tools/
 
 ## mapgen / gentest
 
-- どちらも `mapgen\mapgen.csproj` / `gentest\gentest.csproj` が、ゲーム側のソース（`D:\test1\mumu\Assets\mumu\Scripts` の `Data\*.cs`・`Define\MumuEnum.cs`・`InGame\Gimmick` の一部・`InGame\InGameMap\PuzzlePath.cs`）を直接コンパイルする。Unity の型は `Stubs.cs` の最小限の代用品。`CharacterMaster.cs` は Unity 専用のため除外、`MapCsv.cs` は gentest だけ除外、`gentest` は `System\SaveCrypto.cs` も入れる。
+- どちらも `mapgen\mapgen.csproj` / `gentest\gentest.csproj` が、ゲーム側のソース（`D:\test\mumu\Assets\mumu\Scripts` の `Data\**\*.cs`・`Define\MumuEnum.cs`・`Game\Gimmick` の一部・`Game\Map\PuzzlePath.cs`）を直接コンパイルする。Unity の型は `Stubs.cs` の最小限の代用品。`CharacterMaster.cs` は Unity 専用のため除外、`MapCsv.cs` は gentest だけ除外、`gentest` は `Core\Save\SaveCrypto.cs` も入れる。
 - `GimmickMaster.cs` は `Sprite` / `ResourceManager` を使うため入れていない。ゲーム側で生成に必要な型を増やしたら csproj の `Compile Include` も足す。
-- ゲーム側でファイルを移動したら csproj のパスも直す（`..\..\..\mumu\...` は tools の 3 つ上が D:\test1）。
+- ゲーム側でファイルを移動したら csproj のパスも直す（`..\..\..\mumu\...` は tools の 3 つ上が D:\test）。
 - 動作確認済み: `run_gentest.ps1` → `invalid maps: 0/570`、`run_mapgen.ps1` は `play check: 0 fail / 500 stages`（ただし実行すると今の MapData を上書きする）。
 - mapgen の決まり（`Program.cs`）: テスト用 500 ステージ。テーマは 10 ステージごとに 1〜14 を繰り返し、難易度は 10 ステージごとに +1（1〜50）。新しいギミックの順は `Schedule`（11, 21, … 131 に一本道のチュートリアル）、名前は `TutorialNames`。
   - ステージ1（手で作った一本道、宝箱なし）はそのまま使い、2 以降は消して作り直す

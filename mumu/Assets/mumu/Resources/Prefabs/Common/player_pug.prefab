@@ -11,6 +11,8 @@ GameObject:
   - component: {fileID: 9186335697104890003}
   - component: {fileID: 1276818122039411391}
   - component: {fileID: 3660764073318054589}
+  - component: {fileID: -6183857938404912028}
+  - component: {fileID: 8814365624377972383}
   m_Layer: 5
   m_Name: player_pug
   m_TagString: Untagged
@@ -75,3 +77,29 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &-6183857938404912028
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 114753557153297477}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90e7b77acc156f3429e1d25f5c5571f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  image: {fileID: 3660764073318054589}
+  frameAnimation: {fileID: 8814365624377972383}
+--- !u!114 &8814365624377972383
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 114753557153297477}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f0c49bdeecdfda4f8d49fe4b9353b59, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
